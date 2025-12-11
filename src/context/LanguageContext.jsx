@@ -63,6 +63,7 @@ const translations = {
     noPayersTapToAdd: "還沒有付款人，點擊新增",
     selectPayer: "選擇付款人",
     noPayersYet: "還沒有付款人",
+    selectCategory: "請選擇分類",
     // Categories
     cat_flight: "機票",
     cat_food: "食物",
@@ -130,6 +131,7 @@ const translations = {
     noPayersTapToAdd: "No payers yet, tap to add",
     selectPayer: "Select Payer",
     noPayersYet: "No payers yet",
+    selectCategory: "Please select a category",
     // Categories
     cat_flight: "Flight",
     cat_food: "Food",

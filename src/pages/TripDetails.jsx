@@ -14,7 +14,8 @@ import PayerManagerModal from "../components/PayerManagerModal";
 const TripDetails = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { trips, addTripItem, updateTripItem, addExpense, deleteExpense, addPayer, deletePayer, renamePayer } = useTrips();
+  const { trips, addTripItem, updateTripItem, addExpense, updateExpense, reorderExpenses, deleteExpense, addPayer, deletePayer, renamePayer } =
+    useTrips();
   const { t } = useLanguage();
   const trip = trips.find((t) => t.id === tripId);
 
@@ -24,6 +25,7 @@ const TripDetails = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showPayerModal, setShowPayerModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   if (!trip) return <div>{t("tripNotFound")}</div>;
 
@@ -38,8 +40,13 @@ const TripDetails = () => {
     setEditingItem(null);
   };
 
-  const handleAddExpense = (expense) => {
-    addExpense(trip.id, expense);
+  const handleSaveExpense = (expense) => {
+    if (editingExpense) {
+      updateExpense(trip.id, editingExpense.id, expense);
+      setEditingExpense(null);
+    } else {
+      addExpense(trip.id, expense);
+    }
   };
 
   const renderContent = () => {
@@ -126,8 +133,16 @@ const TripDetails = () => {
       case "expenses":
         return (
           <div style={{ height: "100%", overflowY: "auto", paddingBottom: "80px" }}>
-            <ExpenseSummary expenses={trip.expenses || []} payers={trip.payers || []} />
-            <ExpenseList expenses={trip.expenses || []} onDelete={(id) => deleteExpense(trip.id, id)} />
+            <ExpenseSummary expenses={trip.expenses || []} payers={(trip.payers || []).map((p) => p.name)} />
+            <ExpenseList
+              expenses={trip.expenses || []}
+              onDelete={(id) => deleteExpense(trip.id, id)}
+              onEdit={(expense) => {
+                setEditingExpense(expense);
+                setShowExpenseModal(true);
+              }}
+              onReorder={(newExpenses) => reorderExpenses(trip.id, newExpenses)}
+            />
           </div>
         );
       case "checklist":
@@ -148,7 +163,7 @@ const TripDetails = () => {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <header
         style={{
@@ -206,6 +221,7 @@ const TripDetails = () => {
             }}
             onClick={() => {
               if (activeTab === "expenses") {
+                setEditingExpense(null);
                 setShowExpenseModal(true);
               } else {
                 setEditingItem(null);
@@ -239,17 +255,21 @@ const TripDetails = () => {
 
       {showExpenseModal && (
         <AddExpenseModal
-          onClose={() => setShowExpenseModal(false)}
-          onAdd={handleAddExpense}
-          payers={trip.payers || []}
+          onClose={() => {
+            setShowExpenseModal(false);
+            setEditingExpense(null);
+          }}
+          onAdd={handleSaveExpense}
+          payers={(trip.payers || []).map((p) => p.name)}
           onManagePayers={() => setShowPayerModal(true)}
+          initialData={editingExpense}
         />
       )}
 
       {showPayerModal && (
         <PayerManagerModal
           onClose={() => setShowPayerModal(false)}
-          payers={trip.payers || []}
+          payers={(trip.payers || []).map((p) => p.name)}
           onAdd={(name) => addPayer(trip.id, name)}
           onDelete={(name) => deletePayer(trip.id, name)}
           onRename={(oldName, newName) => renamePayer(trip.id, oldName, newName)}

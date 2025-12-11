@@ -3,23 +3,38 @@ import { motion } from "framer-motion";
 import { X, DollarSign, User, Tag, Calendar, Settings } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 
-const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers }) => {
+const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers, initialData }) => {
   const { t } = useLanguage();
   const [expense, setExpense] = useState({
     title: "",
     amount: "",
-    category: "food",
+    category: "",
     payer: payers.length > 0 ? payers[0] : "",
     date: new Date().toISOString().split("T")[0],
     note: "",
   });
 
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setExpense({
+        title: initialData.title,
+        amount: initialData.amount,
+        category: initialData.category,
+        payer: initialData.payer,
+        date: initialData.date,
+        note: initialData.note || "",
+      });
+    }
+  }, [initialData]);
+
   // Update payer if payers list changes (e.g. after managing payers)
   useEffect(() => {
-    if (payers.length > 0 && !expense.payer) {
+    if (payers.length > 0 && !expense.payer && !initialData) {
       setExpense((prev) => ({ ...prev, payer: payers[0] }));
     }
-  }, [payers]);
+  }, [payers, initialData]);
 
   const categories = [
     { id: "flight", icon: "✈️", label: t("cat_flight"), color: "#BDE0FE" },
@@ -33,6 +48,10 @@ const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!expense.category) {
+      setError(t("selectCategory") || "Please select a category");
+      return;
+    }
     if (expense.title && expense.amount && expense.payer) {
       onAdd({
         ...expense,
@@ -64,7 +83,7 @@ const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers }) => {
         style={{ width: "90%", maxWidth: "400px", maxHeight: "90vh", overflowY: "auto" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2>{t("addExpense")}</h2>
+          <h2>{initialData ? t("editExpense") || "Edit Expense" : t("addExpense")}</h2>
           <button onClick={onClose} style={{ background: "none" }}>
             <X />
           </button>
@@ -102,13 +121,30 @@ const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers }) => {
 
           {/* Category */}
           <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>{t("category")}</label>
-            <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "5px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+              <label style={{ fontWeight: "bold", color: error ? "#ff6b6b" : "inherit" }}>
+                {t("category")} {error && <span style={{ fontSize: "0.8rem", fontWeight: "normal" }}>({error})</span>}
+              </label>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                overflowX: "auto",
+                paddingBottom: "5px",
+                padding: "5px",
+                border: error ? "2px solid #ff6b6b" : "none",
+                borderRadius: "12px",
+              }}
+            >
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setExpense({ ...expense, category: cat.id })}
+                  onClick={() => {
+                    setExpense({ ...expense, category: cat.id });
+                    setError("");
+                  }}
                   style={{
                     padding: "8px 12px",
                     borderRadius: "20px",

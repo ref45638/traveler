@@ -48,7 +48,8 @@ export const TripProvider = ({ children }) => {
 
   const fetchTrips = async (userId) => {
     try {
-      setLoading(true);
+      // Don't set loading(true) here to avoid unmounting components during refresh
+      // setLoading(true);
       const { data, error } = await supabase
         .from("trips")
         .select(
@@ -73,6 +74,7 @@ export const TripProvider = ({ children }) => {
         startDate: trip.start_date,
         endDate: trip.end_date,
         image: trip.image_url,
+        expenses: trip.expenses ? trip.expenses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
         days: trip.days
           .sort((a, b) => a.day_index - b.day_index)
           .map((day) => ({
@@ -200,6 +202,11 @@ export const TripProvider = ({ children }) => {
 
   const addExpense = async (tripId, expense) => {
     try {
+      // Get current max order_index
+      const trip = trips.find((t) => t.id === tripId);
+      const currentExpenses = trip?.expenses || [];
+      const maxOrder = currentExpenses.reduce((max, item) => Math.max(max, item.order_index || 0), 0);
+
       const { error } = await supabase.from("expenses").insert([
         {
           trip_id: tripId,
@@ -208,25 +215,15 @@ export const TripProvider = ({ children }) => {
           payer: expense.payer,
           date: expense.date,
           category: expense.category,
+          note: expense.note,
+          order_index: maxOrder + 1,
         },
       ]);
 
       if (error) throw error;
 
-      // Also ensure payer exists in payers table if not already?
-      // For now, we just add expense. Payer management is separate or implicit.
-      // If the UI requires explicit payer addition first, we handle that in addPayer.
-      // But based on previous logic, adding expense with a new payer might need handling.
-      // Let's rely on the user adding payers via PayerManager or just string storage.
-      // The schema has a 'payers' table.
-
       if (expense.payer) {
-        // Check if payer exists, if not add?
-        // The previous logic did: "if (expense.payer && !newPayers.includes(expense.payer))"
-        // We should probably check if this payer is in the 'payers' table for this trip.
-        const trip = trips.find((t) => t.id === tripId);
         const existingPayer = trip?.payers?.find((p) => p.name === expense.payer);
-
         if (!existingPayer) {
           await addPayer(tripId, expense.payer);
         }
@@ -235,6 +232,101 @@ export const TripProvider = ({ children }) => {
       fetchTrips(user.id);
     } catch (error) {
       console.error("Error adding expense:", error);
+    }
+  };
+
+  const updateExpense = async (tripId, expenseId, updatedExpense) => {
+    try {
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          title: updatedExpense.title,
+          amount: updatedExpense.amount,
+          payer: updatedExpense.payer,
+          date: updatedExpense.date,
+          category: updatedExpense.category,
+          note: updatedExpense.note,
+        })
+        .eq("id", expenseId);
+
+      if (error) throw error;
+      fetchTrips(user.id);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+    }
+  };
+
+  const reorderExpenses = async (tripId, reorderedExpenses) => {
+    // Optimistic Update
+    setTrips((prevTrips) => {
+      return prevTrips.map((trip) => {
+        if (trip.id !== tripId) return trip;
+
+        // Create a map of updated expenses for easy lookup
+        // And assign the new order_index
+        const updatedMap = new Map(reorderedExpenses.map((item, index) => [item.id, { ...item, order_index: index }]));
+
+        // Merge with existing expenses
+        // We iterate over existing expenses. If an expense is in the reordered list, we use the new version.
+        // However, we must ensure the *order* in the state array reflects the new order for that day.
+        // Since `reorderedExpenses` is only for ONE day, we can't just replace the whole array.
+
+        // Strategy:
+        // 1. Get all expenses that are NOT in the reordered list (other days).
+        // 2. Combine with the reordered list.
+        // 3. Sort everything by order_index (optional, but good for consistency if we rely on it).
+        // Actually, since order_index is scoped per day effectively (0, 1, 2...), sorting by it globally mixes days.
+        // But `ExpenseList` groups by date.
+        // So as long as the array has the correct items, `ExpenseList` will group them.
+        // BUT `ExpenseList` iterates the main array to build groups.
+        // If the main array is [Day1_Item1, Day2_Item1, Day1_Item2], the groups will be correct.
+        // The order WITHIN the group depends on the order they appear in the main array.
+
+        // So we MUST ensure that for the specific day, the items appear in the correct relative order in the main array.
+        // Or simpler: Just update the `order_index` properties and then sort the whole array by `order_index`.
+        // Since we use `order_index` for sorting in `fetchTrips`, we should maintain that invariant.
+
+        const newExpenses = trip.expenses.map((exp) => (updatedMap.has(exp.id) ? updatedMap.get(exp.id) : exp));
+
+        // We sort by order_index to ensure the UI (which groups by date then preserves order) works.
+        // Note: Since order_index is 0-based per day, sorting by it alone doesn't separate days.
+        // But `ExpenseList` groups by date first.
+        // So:
+        // Day 1: A(0), B(1)
+        // Day 2: C(0), D(1)
+        // Sorted: A, C, B, D (stable sort or undefined order for equal keys).
+        // Grouped Day 1: A, B.
+        // Grouped Day 2: C, D.
+        // This works.
+
+        newExpenses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+        return { ...trip, expenses: newExpenses };
+      });
+    });
+
+    try {
+      // For now, just update DB
+      const updates = reorderedExpenses.map((item, index) => ({
+        id: item.id,
+        trip_id: tripId,
+        title: item.title, // Required for upsert if not partial? No, upsert needs PK.
+        amount: item.amount,
+        payer: item.payer,
+        date: item.date,
+        category: item.category,
+        note: item.note,
+        order_index: index,
+      }));
+
+      const { error } = await supabase.from("expenses").upsert(updates);
+
+      if (error) throw error;
+      // fetchTrips(user.id); // We don't need to fetch if optimistic update worked. But maybe good for sync.
+      // If we don't fetch, we save bandwidth/flicker.
+    } catch (error) {
+      console.error("Error reordering expenses:", error);
+      fetchTrips(user.id); // Revert/Sync on error
     }
   };
 
@@ -357,6 +449,8 @@ export const TripProvider = ({ children }) => {
         deleteTripItem,
         updateTripItem,
         addExpense,
+        updateExpense,
+        reorderExpenses,
         deleteExpense,
         addPayer,
         deletePayer,

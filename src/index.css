@@ -92,7 +92,6 @@ textarea:focus {
   min-height: 100vh;
   /* background-color: rgba(255, 253, 245, 0.9); Optional: overlay to make text readable if bg is busy */
   position: relative;
-  padding-bottom: 90px;
 }
 
 /* Utility classes */
