@@ -114,7 +114,26 @@ ALTER TABLE trip_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_invites ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
--- 3. RLS POLICIES
+-- 3. HELPER FUNCTION FOR SHARING
+-- ============================================
+
+-- Function to check if user has access to a trip (owner or shared)
+CREATE OR REPLACE FUNCTION user_has_trip_access(trip_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM trips 
+    WHERE id = trip_uuid 
+    AND (
+      user_id = auth.uid() 
+      OR id IN (SELECT trip_id FROM trip_shares WHERE user_id = auth.uid())
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+-- 4. RLS POLICIES
 -- ============================================
 
 -- PROFILES
@@ -128,117 +147,99 @@ CREATE POLICY "Users can update own profile." ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
 -- TRIPS
-CREATE POLICY "Users can view own trips" ON trips 
-  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can view accessible trips" ON trips 
+  FOR SELECT USING (
+    auth.uid() = user_id 
+    OR id IN (SELECT trip_id FROM trip_shares WHERE user_id = auth.uid())
+  );
 
 CREATE POLICY "Users can insert own trips" ON trips 
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own trips" ON trips 
-  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can update accessible trips" ON trips 
+  FOR UPDATE USING (
+    auth.uid() = user_id 
+    OR id IN (SELECT trip_id FROM trip_shares WHERE user_id = auth.uid() AND role = 'editor')
+  );
 
 CREATE POLICY "Users can delete own trips" ON trips 
   FOR DELETE USING (auth.uid() = user_id);
 
 -- TRIP DAYS
-CREATE POLICY "Users can view days of own trips" ON trip_days 
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can view days of accessible trips" ON trip_days 
+  FOR SELECT USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can insert days to own trips" ON trip_days 
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can insert days to accessible trips" ON trip_days 
+  FOR INSERT WITH CHECK (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can update days of own trips" ON trip_days 
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can update days of accessible trips" ON trip_days 
+  FOR UPDATE USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can delete days of own trips" ON trip_days 
-  FOR DELETE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can delete days of accessible trips" ON trip_days 
+  FOR DELETE USING (user_has_trip_access(trip_id));
 
 -- TRIP ITEMS
-CREATE POLICY "Users can view items of own trips" ON trip_items 
+CREATE POLICY "Users can view items of accessible trips" ON trip_items 
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM trip_days 
-      JOIN trips ON trip_days.trip_id = trips.id 
-      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+      WHERE trip_days.id = trip_items.day_id 
+      AND user_has_trip_access(trip_days.trip_id)
     )
   );
 
-CREATE POLICY "Users can insert items to own trips" ON trip_items 
+CREATE POLICY "Users can insert items to accessible trips" ON trip_items 
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM trip_days 
-      JOIN trips ON trip_days.trip_id = trips.id 
-      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+      WHERE trip_days.id = trip_items.day_id 
+      AND user_has_trip_access(trip_days.trip_id)
     )
   );
 
-CREATE POLICY "Users can update items of own trips" ON trip_items 
+CREATE POLICY "Users can update items of accessible trips" ON trip_items 
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM trip_days 
-      JOIN trips ON trip_days.trip_id = trips.id 
-      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+      WHERE trip_days.id = trip_items.day_id 
+      AND user_has_trip_access(trip_days.trip_id)
     )
   );
 
-CREATE POLICY "Users can delete items of own trips" ON trip_items 
+CREATE POLICY "Users can delete items of accessible trips" ON trip_items 
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM trip_days 
-      JOIN trips ON trip_days.trip_id = trips.id 
-      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+      WHERE trip_days.id = trip_items.day_id 
+      AND user_has_trip_access(trip_days.trip_id)
     )
   );
 
 -- EXPENSES
-CREATE POLICY "Users can view expenses of own trips" ON expenses 
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can view expenses of accessible trips" ON expenses 
+  FOR SELECT USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can insert expenses to own trips" ON expenses 
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can insert expenses to accessible trips" ON expenses 
+  FOR INSERT WITH CHECK (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can update expenses of own trips" ON expenses 
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can update expenses of accessible trips" ON expenses 
+  FOR UPDATE USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can delete expenses of own trips" ON expenses 
-  FOR DELETE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can delete expenses of accessible trips" ON expenses 
+  FOR DELETE USING (user_has_trip_access(trip_id));
 
 -- PAYERS
-CREATE POLICY "Users can view payers of own trips" ON payers 
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can view payers of accessible trips" ON payers 
+  FOR SELECT USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can insert payers to own trips" ON payers 
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can insert payers to accessible trips" ON payers 
+  FOR INSERT WITH CHECK (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can update payers of own trips" ON payers 
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can update payers of accessible trips" ON payers 
+  FOR UPDATE USING (user_has_trip_access(trip_id));
 
-CREATE POLICY "Users can delete payers of own trips" ON payers 
-  FOR DELETE USING (
-    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
-  );
+CREATE POLICY "Users can delete payers of accessible trips" ON payers 
+  FOR DELETE USING (user_has_trip_access(trip_id));
 
 -- TRIP SHARES
 CREATE POLICY "Users can view own shares" ON trip_shares 
@@ -255,8 +256,8 @@ CREATE POLICY "Users can delete shares for own trips" ON trip_shares
   );
 
 -- TRIP INVITES
-CREATE POLICY "Users can view own invites" ON trip_invites 
-  FOR SELECT USING (created_by = auth.uid());
+CREATE POLICY "Anyone can view invites" ON trip_invites 
+  FOR SELECT USING (true);
 
 CREATE POLICY "Users can create invites for own trips" ON trip_invites 
   FOR INSERT WITH CHECK (
@@ -270,7 +271,7 @@ CREATE POLICY "Users can update own invites" ON trip_invites
   FOR UPDATE USING (created_by = auth.uid());
 
 -- ============================================
--- 4. INDEXES
+-- 5. INDEXES
 -- ============================================
 
 CREATE INDEX idx_trip_shares_trip_id ON trip_shares(trip_id);
@@ -279,7 +280,7 @@ CREATE INDEX idx_trip_invites_trip_id ON trip_invites(trip_id);
 CREATE INDEX idx_trip_invites_invite_code ON trip_invites(invite_code);
 
 -- ============================================
--- 5. FUNCTIONS & TRIGGERS
+-- 6. FUNCTIONS & TRIGGERS
 -- ============================================
 
 -- Trigger to create profile on signup
