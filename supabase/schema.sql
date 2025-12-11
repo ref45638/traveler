@@ -37,9 +37,10 @@ create table trip_items (
   type text, -- 'activity', 'food', 'transport', etc.
   title text,
   description text,
-  time time,
+  time text,
   location text,
   cost numeric,
+  image text,
   completed boolean default false,
   order_index integer
 );

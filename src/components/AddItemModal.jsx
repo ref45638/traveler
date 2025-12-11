@@ -5,15 +5,25 @@ import { useLanguage } from "../context/LanguageContext";
 
 const AddItemModal = ({ onClose, onAdd, initialData }) => {
   const { t } = useLanguage();
-  const [item, setItem] = useState(
-    initialData || {
+  const [item, setItem] = useState(() => {
+    if (initialData) {
+      const [start, end] = initialData.time ? initialData.time.split(" - ") : ["", ""];
+      return {
+        title: initialData.title || "",
+        startTime: start || "",
+        endTime: end || "",
+        note: initialData.description || "",
+        image: initialData.image || "",
+      };
+    }
+    return {
       title: "",
       startTime: "",
       endTime: "",
       note: "",
       image: "",
-    }
-  );
+    };
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,7 +58,7 @@ const AddItemModal = ({ onClose, onAdd, initialData }) => {
         style={{ width: "90%", maxWidth: "400px", maxHeight: "90vh", overflowY: "auto" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2>{t("addActivity")}</h2>
+          <h2>{initialData ? t("editActivity") || "Edit Activity" : t("addActivity")}</h2>
           <button onClick={onClose} style={{ background: "none" }}>
             <X />
           </button>
@@ -110,7 +120,7 @@ const AddItemModal = ({ onClose, onAdd, initialData }) => {
           </div>
 
           <button type="submit" className="btn-primary" style={{ width: "100%", borderRadius: "20px" }}>
-            {t("addToItinerary")}
+            {initialData ? t("saveChanges") || "Save Changes" : t("addToItinerary")}
           </button>
         </form>
       </motion.div>

@@ -152,11 +152,12 @@ export const TripProvider = ({ children }) => {
         {
           day_id: dayId,
           title: item.title,
-          description: item.description,
+          description: item.note, // Map note to description
           time: item.time,
           location: item.location,
           cost: item.cost,
           type: item.type,
+          image: item.image,
           completed: false,
         },
       ]);
@@ -174,11 +175,12 @@ export const TripProvider = ({ children }) => {
         .from("trip_items")
         .update({
           title: updatedItem.title,
-          description: updatedItem.description,
+          description: updatedItem.note, // Map note to description
           time: updatedItem.time,
           location: updatedItem.location,
           cost: updatedItem.cost,
           type: updatedItem.type,
+          image: updatedItem.image,
           completed: updatedItem.completed,
         })
         .eq("id", itemId);
@@ -397,42 +399,49 @@ export const TripProvider = ({ children }) => {
 
   // Placeholder for updateTripItems (drag and drop reordering)
   const updateTripItems = async (tripId, dayId, newItems) => {
-    // This is complex because it involves reordering.
-    // For now, let's just update the local state or implement a batch update if needed.
-    // A simple way is to delete all items for the day and re-insert (bad for IDs).
-    // Better: Upsert with new order_index.
+    // Optimistic Update
+    setTrips((prevTrips) => {
+      return prevTrips.map((trip) => {
+        if (trip.id !== tripId) return trip;
+
+        const newDays = trip.days.map((day) => {
+          if (day.id !== dayId) return day;
+
+          // Update items for this day with new order_index
+          const updatedItems = newItems.map((item, index) => ({
+            ...item,
+            order_index: index,
+          }));
+
+          return { ...day, items: updatedItems };
+        });
+
+        return { ...trip, days: newDays };
+      });
+    });
 
     try {
       const updates = newItems.map((item, index) => ({
         id: item.id,
         day_id: dayId,
         order_index: index,
-        title: item.title, // Include other fields to be safe or just update order
-        // ... other fields might be needed if upsert replaces
+        title: item.title,
+        description: item.description,
+        time: item.time,
+        location: item.location,
+        cost: item.cost,
+        type: item.type,
+        image: item.image,
+        completed: item.completed,
       }));
 
-      // Ideally we just update order_index.
-      // Supabase upsert:
-      const { error } = await supabase.from("trip_items").upsert(
-        updates.map((item) => ({
-          id: item.id,
-          day_id: dayId,
-          order_index: item.order_index,
-          // We need to preserve other fields, but upsert might require them if not partial?
-          // Actually 'upsert' works on PK. If we only provide ID and order_index, others might be nullified if we don't be careful?
-          // No, Supabase upsert updates columns provided. BUT if it's a new row it needs required cols.
-          // Since these exist, it should be an update.
-          // However, to be safe, let's just loop update or use a specific RPC.
-          // For MVP, let's just loop update (slow but works) or assume full object is passed.
-          // The 'newItems' passed from UI usually has all data.
-          ...item,
-        }))
-      );
+      const { error } = await supabase.from("trip_items").upsert(updates);
 
       if (error) throw error;
-      fetchTrips(user.id);
+      // fetchTrips(user.id); // Skip for optimistic
     } catch (error) {
       console.error("Error reordering items:", error);
+      fetchTrips(user.id); // Revert on error
     }
   };
 
