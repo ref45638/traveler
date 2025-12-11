@@ -1,0 +1,158 @@
+import React, { createContext, useState, useContext, useEffect } from "react";
+
+const LanguageContext = createContext();
+
+export const useLanguage = () => useContext(LanguageContext);
+
+const translations = {
+  "zh-TW": {
+    appTitle: "規劃旅遊",
+    appSubtitle: "規劃你的可愛冒險！",
+    newTrip: "新增行程",
+    title: "標題",
+    startDate: "開始日期",
+    endDate: "結束日期",
+    cancel: "取消",
+    create: "建立",
+    days: "天",
+    deleteConfirm: "確定要刪除這個行程嗎？",
+    tripNotFound: "找不到行程",
+    itinerary: "行程",
+    expenses: "花費",
+    checklist: "清單",
+    notes: "筆記",
+    comingSoon: "即將推出",
+    addActivity: "新增活動",
+    startTime: "開始時間",
+    endTime: "結束時間",
+    imageURL: "圖片連結",
+    addToItinerary: "加入行程",
+    noActivities: "還沒有活動喔！",
+    tapToAdd: "點擊 + 新增一個吧。",
+    settings: "設定",
+    language: "語言",
+    selectLanguage: "選擇語言",
+    day: "第",
+    daySuffix: "天",
+    placeholderTitle: "例如：2025 大阪",
+    placeholderActivity: "例如：參觀大阪城",
+    placeholderNote: "航班資訊、訂位代號...",
+    back: "返回",
+    home: "首頁",
+    profile: "我的",
+    // Expenses
+    totalSpent: "總花費",
+    whoPaid: "誰付錢？",
+    whoPaidLabel: "誰付的？",
+    balances: "結餘",
+    addExpense: "新增花費",
+    amount: "金額",
+    category: "分類",
+    payer: "付款人",
+    splitBy: "分給誰？",
+    saveExpense: "儲存花費",
+    paidBy: "由 {name} 支付",
+    forPeople: "分給 {n} 人",
+    gets: "應收",
+    owes: "應付",
+    noExpenses: "尚未有花費",
+    tapToAddExpense: "點擊 + 新增一筆吧",
+    enterName: "輸入姓名",
+    addNewPerson: "+ 新增付款人",
+    managePayers: "管理付款人",
+    noPayersTapToAdd: "還沒有付款人，點擊新增",
+    selectPayer: "選擇付款人",
+    noPayersYet: "還沒有付款人",
+    // Categories
+    cat_flight: "機票",
+    cat_food: "食物",
+    cat_transport: "交通",
+    cat_shopping: "購物",
+    cat_hotel: "住宿",
+    cat_ticket: "票券",
+    cat_other: "其他",
+  },
+  en: {
+    appTitle: "Chiikawa Travel",
+    appSubtitle: "Plan your cute adventures!",
+    newTrip: "New Trip",
+    title: "Title",
+    startDate: "Start Date",
+    endDate: "End Date",
+    cancel: "Cancel",
+    create: "Create",
+    days: "DAYS",
+    deleteConfirm: "Are you sure you want to delete this trip?",
+    tripNotFound: "Trip not found",
+    itinerary: "Itinerary",
+    expenses: "Expenses",
+    checklist: "Checklist",
+    notes: "Notes",
+    comingSoon: "Coming Soon",
+    addActivity: "Add Activity",
+    startTime: "Start Time",
+    endTime: "End Time",
+    imageURL: "Image URL",
+    addToItinerary: "Add to Itinerary",
+    noActivities: "No activities yet!",
+    tapToAdd: "Tap + to add one.",
+    settings: "Settings",
+    language: "Language",
+    selectLanguage: "Select Language",
+    day: "Day",
+    daySuffix: "",
+    placeholderTitle: "e.g. 2025 Osaka",
+    placeholderActivity: "e.g. Visit Osaka Castle",
+    placeholderNote: "Flight details, reservation numbers...",
+    back: "Back",
+    home: "Home",
+    profile: "Me",
+    // Expenses
+    totalSpent: "Total Spent",
+    whoPaid: "Who Paid?",
+    whoPaidLabel: "Who Paid?",
+    balances: "Balances",
+    addExpense: "Add Expense",
+    amount: "Amount",
+    category: "Category",
+    payer: "Payer",
+    splitBy: "For Whom?",
+    saveExpense: "Save Expense",
+    paidBy: "Paid by {name}",
+    forPeople: "For {n} ppl",
+    gets: "Gets",
+    owes: "Owes",
+    noExpenses: "No expenses yet",
+    tapToAddExpense: "Tap + to add one",
+    enterName: "Enter Name",
+    addNewPerson: "+ Add New Person",
+    managePayers: "Manage Payers",
+    noPayersTapToAdd: "No payers yet, tap to add",
+    selectPayer: "Select Payer",
+    noPayersYet: "No payers yet",
+    // Categories
+    cat_flight: "Flight",
+    cat_food: "Food",
+    cat_transport: "Transport",
+    cat_shopping: "Shopping",
+    cat_hotel: "Hotel",
+    cat_ticket: "Ticket",
+    cat_other: "Other",
+  },
+};
+
+export const LanguageProvider = ({ children }) => {
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem("chiikawa_lang") || "zh-TW";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("chiikawa_lang", language);
+  }, [language]);
+
+  const t = (key) => {
+    return translations[language][key] || key;
+  };
+
+  return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>;
+};

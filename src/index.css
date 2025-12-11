@@ -1,0 +1,192 @@
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Noto+Sans+TC:wght@400;700&family=Zen+Maru+Gothic:wght@400;700;900&display=swap");
+
+:root {
+  --color-primary: #ffb7c5;
+  --color-primary-dark: #ff9eaa;
+  --color-secondary: #a0d8ef;
+  --color-accent: #fff5ba;
+  --color-text: #4a3b32; /* Darker brown for text and borders */
+  --color-text-light: #8c7b70;
+  --color-bg: #fffdf5;
+  --color-white: #ffffff;
+
+  /* Card Backgrounds */
+  --card-bg-pink: #ffdbe6;
+  --card-bg-blue: #ddf5f8;
+  --card-bg-yellow: #fff6c5;
+  --card-bg-green: #e3f2c8;
+
+  --shadow-soft: 0 4px 0 rgba(74, 59, 50, 0.1); /* Harder shadow for cartoon look */
+  --shadow-hover: 0 6px 0 rgba(74, 59, 50, 0.15);
+
+  --border-width: 3px;
+  --border-color: #4a3b32;
+
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+
+  --font-main: "Zen Maru Gothic", "Noto Sans TC", "M PLUS Rounded 1c", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--color-bg);
+  background-image: url("/images/App_Background.png");
+  background-repeat: repeat;
+  background-size: 400px;
+  background-attachment: fixed;
+  color: var(--color-text);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: var(--font-main);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  color: var(--color-text);
+}
+
+input,
+textarea {
+  font-family: var(--font-main);
+  border: var(--border-width) solid var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  color: var(--color-text);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 10px;
+}
+
+.page-container {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  /* background-color: rgba(255, 253, 245, 0.9); Optional: overlay to make text readable if bg is busy */
+  position: relative;
+  padding-bottom: 90px;
+}
+
+/* Utility classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 rgba(74, 59, 50, 0.2);
+  padding: 15px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(74, 59, 50, 0.2);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 12px 24px;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 2px 2px 0 rgba(74, 59, 50, 0.2);
+  transition: all 0.1s;
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 transparent;
+}
+
+.btn-icon {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 rgba(74, 59, 50, 0.2);
+  color: var(--color-text);
+}
+
+/* Specific styles for the "Chiikawa" look */
+.chiikawa-header {
+  text-align: center;
+  font-weight: 800;
+  color: var(--color-text);
+  text-shadow: 2px 2px 0 #fff;
+  margin-bottom: 20px;
+}
+
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: #fff8e7; /* Creamy background */
+  border-top: var(--border-width) solid var(--border-color);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  max-width: 600px;
+  margin: 0 auto;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.top-nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #fff8e7;
+  border-bottom: var(--border-width) solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  max-width: 600px;
+  margin: 0 auto;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
