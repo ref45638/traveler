@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -28,6 +28,28 @@ const TripDetails = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
+  const dayTabsRef = useRef(null);
+  const dayButtonRefs = useRef([]);
+
+  // Auto-scroll day tabs when currentDayIndex changes
+  useEffect(() => {
+    if (dayButtonRefs.current[currentDayIndex] && dayTabsRef.current) {
+      const button = dayButtonRefs.current[currentDayIndex];
+      const container = dayTabsRef.current;
+      const buttonLeft = button.offsetLeft;
+      const buttonWidth = button.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      const scrollLeft = container.scrollLeft;
+
+      // Calculate the ideal scroll position to center the button
+      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+
+      container.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: "smooth"
+      });
+    }
+  }, [currentDayIndex]);
 
   if (!trip) return <div>{t("tripNotFound")}</div>;
 
@@ -56,85 +78,50 @@ const TripDetails = () => {
       case "itinerary":
         if (!trip.days || trip.days.length === 0) {
           return (
-            <div className="flex-center" style={{ height: "100%" }}>
+            <div className="flex-center" style={{ height: "200px" }}>
               {t("noDaysAvailable")}
             </div>
           );
         }
         return (
-          <div style={{ height: "calc(100vh - 140px)", display: "flex", flexDirection: "column" }}>
-            {/* Day Tabs */}
-            <div
-              style={{
-                display: "flex",
-                overflowX: "auto",
-                padding: "10px",
-                gap: "10px",
-                scrollbarWidth: "none",
-                borderBottom: "1px solid #eee",
-              }}
-            >
-              {trip.days.map((day, index) => (
-                <button
-                  key={day.id}
-                  onClick={() => setCurrentDayIndex(index)}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    backgroundColor: currentDayIndex === index ? "var(--color-primary)" : "var(--color-white)",
-                    color: currentDayIndex === index ? "white" : "var(--color-text)",
-                    whiteSpace: "nowrap",
-                    boxShadow: "var(--shadow-soft)",
-                    fontWeight: "bold",
-                    flexShrink: 0,
-                  }}
-                >
-                  {t("day")} {day.dayIndex} {t("daySuffix")}
-                  <span style={{ fontSize: "0.8em", marginLeft: "5px", fontWeight: "normal" }}>{day.date.slice(5)}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Swipeable Day Content */}
-            <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentDayIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.2}
-                  onDragEnd={(e, { offset, velocity }) => {
-                    const swipe = Math.abs(offset.x) * velocity.x;
-                    if (swipe < -10000) {
-                      if (currentDayIndex < trip.days.length - 1) setCurrentDayIndex(currentDayIndex + 1);
-                    } else if (swipe > 10000) {
-                      if (currentDayIndex > 0) setCurrentDayIndex(currentDayIndex - 1);
-                    }
-                  }}
-                  style={{ height: "100%", overflowY: "auto", padding: "10px" }}
-                >
-                  {trip.days[currentDayIndex] && (
-                    <DayView
-                      tripId={trip.id}
-                      day={trip.days[currentDayIndex]}
-                      onEdit={(item) => {
-                        setEditingItem(item);
-                        setShowAddModal(true);
-                      }}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+          <div style={{ overflow: "visible", touchAction: "pan-y", minHeight: "60vh" }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentDayIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(e, { offset, velocity }) => {
+                  const swipe = Math.abs(offset.x) * velocity.x;
+                  if (swipe < -10000) {
+                    if (currentDayIndex < trip.days.length - 1) setCurrentDayIndex(currentDayIndex + 1);
+                  } else if (swipe > 10000) {
+                    if (currentDayIndex > 0) setCurrentDayIndex(currentDayIndex - 1);
+                  }
+                }}
+                style={{ touchAction: "none", minHeight: "60vh" }}
+              >
+                {trip.days[currentDayIndex] && (
+                  <DayView
+                    tripId={trip.id}
+                    day={trip.days[currentDayIndex]}
+                    onEdit={(item) => {
+                      setEditingItem(item);
+                      setShowAddModal(true);
+                    }}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         );
       case "expenses":
         return (
-          <div style={{ height: "100%", overflowY: "auto", paddingBottom: "80px" }}>
+          <div style={{ height: "100%", overflowY: "auto", overflowX: "hidden", paddingBottom: "80px" }}>
             <ExpenseSummary expenses={trip.expenses || []} payers={(trip.payers || []).map((p) => p.name)} />
             <ExpenseList
               expenses={trip.expenses || []}
@@ -165,27 +152,20 @@ const TripDetails = () => {
   };
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <header
-        style={{
-          padding: "15px",
-          display: "flex",
-          alignItems: "center",
-          gap: "15px",
-          backgroundColor: "var(--color-white)",
-          boxShadow: "var(--shadow-soft)",
-          zIndex: 10,
-        }}
-      >
-        <Link to="/" style={{ color: "var(--color-text)" }}>
+    <div style={{ padding: "20px", paddingTop: "80px", paddingBottom: "100px" }}>
+      {/* Top Navigation Bar - same as Home */}
+      <div className="top-nav-bar">
+        <Link to="/" style={{ position: "absolute", left: "20px", display: "flex", alignItems: "center", color: "var(--color-text)" }}>
           <ArrowLeft />
         </Link>
-        <h1 style={{ fontSize: "1.2rem", margin: 0, flex: 1 }}>{trip.title}</h1>
-        {/* Share Button */}
+        <h1 className="chiikawa-header" style={{ fontSize: "1.2rem", margin: 0 }}>
+          {trip.title}
+        </h1>
         <button
           onClick={() => setShowShareModal(true)}
           style={{
+            position: "absolute",
+            right: "20px",
             background: "none",
             color: "var(--color-text)",
             padding: "8px",
@@ -211,24 +191,51 @@ const TripDetails = () => {
             </span>
           )}
         </button>
-      </header>
+      </div>
+
+      {/* Day Tabs */}
+      {activeTab === "itinerary" && trip.days && trip.days.length > 0 && (
+        <div
+          ref={dayTabsRef}
+          style={{
+            display: "flex",
+            overflowX: "auto",
+            marginBottom: "10px",
+            gap: "10px",
+            scrollbarWidth: "none",
+          }}
+        >
+          {trip.days.map((day, index) => (
+            <button
+              key={day.id}
+              ref={(el) => (dayButtonRefs.current[index] = el)}
+              onClick={() => setCurrentDayIndex(index)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "20px",
+                backgroundColor: currentDayIndex === index ? "var(--color-primary)" : "var(--color-white)",
+                color: currentDayIndex === index ? "white" : "var(--color-text)",
+                whiteSpace: "nowrap",
+                boxShadow: "var(--shadow-soft)",
+                fontWeight: "bold",
+                flexShrink: 0,
+                border: "2px solid var(--border-color)",
+              }}
+            >
+              {t("day")} {day.dayIndex} {t("daySuffix")}
+              <span style={{ fontSize: "0.8em", marginLeft: "5px", fontWeight: "normal" }}>{day.date.slice(5)}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main Content */}
-      <main style={{ flex: 1, overflow: "hidden" }}>{renderContent()}</main>
+      <div style={{ minHeight: "60vh" }}>
+        {renderContent()}
+      </div>
 
-      {/* Bottom Nav */}
-      <nav
-        style={{
-          height: "70px",
-          backgroundColor: "var(--color-white)",
-          borderTop: "1px solid #eee",
-          display: "flex",
-          justifyContent: "space-around",
-          alignItems: "center",
-          zIndex: 10,
-          position: "relative",
-        }}
-      >
+      {/* Bottom Nav - same as Home */}
+      <div className="nav-bar">
         <NavButton icon={<Map size={20} />} label={t("itinerary")} active={activeTab === "itinerary"} onClick={() => setActiveTab("itinerary")} />
         <NavButton icon={<DollarSign size={20} />} label={t("expenses")} active={activeTab === "expenses"} onClick={() => setActiveTab("expenses")} />
 
@@ -271,7 +278,7 @@ const TripDetails = () => {
           onClick={() => setActiveTab("checklist")}
         />
         <NavButton icon={<FileText size={20} />} label={t("notes")} active={activeTab === "notes"} onClick={() => setActiveTab("notes")} />
-      </nav>
+      </div>
 
       {showAddModal && (
         <AddItemModal

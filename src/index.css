@@ -5,7 +5,8 @@
   --color-primary-dark: #ff9eaa;
   --color-secondary: #a0d8ef;
   --color-accent: #fff5ba;
-  --color-text: #4a3b32; /* Darker brown for text and borders */
+  --color-text: #4a3b32;
+  /* Darker brown for text and borders */
   --color-text-light: #8c7b70;
   --color-bg: #fffdf5;
   --color-white: #ffffff;
@@ -16,7 +17,8 @@
   --card-bg-yellow: #fff6c5;
   --card-bg-green: #e3f2c8;
 
-  --shadow-soft: 0 4px 0 rgba(74, 59, 50, 0.1); /* Harder shadow for cartoon look */
+  --shadow-soft: 0 4px 0 rgba(74, 59, 50, 0.1);
+  /* Harder shadow for cartoon look */
   --shadow-hover: 0 6px 0 rgba(74, 59, 50, 0.15);
 
   --border-width: 3px;
@@ -57,31 +59,46 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
   font-family: var(--font-main);
   border: var(--border-width) solid var(--color-text);
   border-radius: var(--radius-sm);
   padding: 10px;
   color: var(--color-text);
+  background-color: var(--color-white);
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-/* Fix for time/date inputs on mobile browsers */
+/* Fix for form inputs on mobile browsers */
 input[type="time"],
 input[type="date"],
-input[type="datetime-local"] {
+input[type="datetime-local"],
+input[type="number"],
+select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background-color: var(--color-white);
   font-family: var(--font-main);
-  font-size: 16px; /* Prevents iOS zoom on focus */
-  min-height: 44px; /* Better touch target */
+  font-size: 16px;
+  /* Prevents iOS zoom on focus */
+  min-height: 44px;
+  /* Better touch target */
+}
+
+/* Add dropdown arrow for select since we removed appearance */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234A3B32' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
 /* Scrollbar styling */
@@ -173,7 +190,8 @@ input[type="datetime-local"] {
   left: 0;
   right: 0;
   height: 80px;
-  background: #fff8e7; /* Creamy background */
+  background: #fff8e7;
+  /* Creamy background */
   border-top: var(--border-width) solid var(--border-color);
   display: flex;
   justify-content: space-around;
@@ -183,6 +201,8 @@ input[type="datetime-local"] {
   margin: 0 auto;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+  /* iOS Safe Area Support */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .top-nav-bar {

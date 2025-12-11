@@ -3,28 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/traveler/images/icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
     <title>Travel Planner</title>
-    <style>
-      body {
-        /* Use %BASE_URL% if Vite supported it in style blocks, but it doesn't always. 
-           However, we can just use the known base path since this is index.html */
-        /* Actually, Vite replaces %BASE_URL% in HTML attributes, but maybe not in style tags? 
-           Let's use a script to set it to be safe and dynamic. */
-      }
-    </style>
-    <script>
-      // Dynamically set background image to respect base path
-      // import.meta.env.BASE_URL is available in module scripts, but this is a raw script.
-      // We can use a small inline script or just hardcode if we know the base.
-      // Better: Let Vite handle it via a transform if possible.
-      // But simplest is just:
-    </script>
   </head>
-  <body style="background-image: url('/traveler/images/App_Background.png')">
+  <body style="background-image: url('/traveler/images/App_Background_Simple.png')">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

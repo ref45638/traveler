@@ -1,13 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import { Home, User, LogOut, Trash2 } from "lucide-react";
+import { getAssetUrl } from "../utils/imagePath";
+import { User, LogOut, Trash2 } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || "");
+      }
+    };
+    getUser();
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -52,8 +64,8 @@ const Profile = () => {
           >
             <User size={30} color="#888" />
           </div>
-          <div>
-            <h2 style={{ fontSize: "1.2rem", fontWeight: "bold" }}>User</h2>
+          <div style={{ overflow: "hidden" }}>
+            <h2 style={{ fontSize: "1rem", fontWeight: "bold", wordBreak: "break-all" }}>{userEmail || "User"}</h2>
             <p style={{ color: "#888", fontSize: "0.9rem" }}>Traveler</p>
           </div>
         </div>
@@ -113,15 +125,15 @@ const Profile = () => {
             color: "var(--color-text-light)",
           }}
         >
-          <Home size={24} />
-          <span style={{ fontSize: "0.8rem", fontWeight: "bold", marginTop: "2px" }}>{t("home")}</span>
+          <img src={getAssetUrl("/images/house.png")} alt="Home" style={{ width: "50px", height: "50px", objectFit: "contain" }} />
+          <span style={{ fontSize: "0.9rem", fontWeight: "bold", marginTop: "2px" }}>{t("home")}</span>
         </Link>
         <div style={{ width: "70px" }}></div> {/* Spacer for FAB */}
         <div
           style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", color: "var(--color-primary)" }}
         >
-          <User size={24} />
-          <span style={{ fontSize: "0.8rem", fontWeight: "bold", marginTop: "2px" }}>{t("profile")}</span>
+          <User size={40} strokeWidth={2.5} />
+          <span style={{ fontSize: "0.9rem", fontWeight: "bold", marginTop: "2px" }}>{t("profile")}</span>
         </div>
       </div>
     </div>
