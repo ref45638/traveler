@@ -71,6 +71,19 @@ textarea:focus {
   border-color: var(--color-primary);
 }
 
+/* Fix for time/date inputs on mobile browsers */
+input[type="time"],
+input[type="date"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--color-white);
+  font-family: var(--font-main);
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  min-height: 44px; /* Better touch target */
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
