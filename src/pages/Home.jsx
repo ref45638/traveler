@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getAssetUrl } from "../utils/imagePath";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Link } from "react-router-dom";
@@ -16,59 +17,59 @@ const Home = () => {
   // Location to Image Mapping
   // Location to Image Mapping
   const locationImages = {
-    tokyo: "/images/locations/tokyo.png",
-    東京: "/images/locations/tokyo.png",
-    osaka: "/images/locations/osaka.png",
-    大阪: "/images/locations/osaka.png",
-    kyoto: "/images/locations/kyoto.png",
-    京都: "/images/locations/kyoto.png",
-    fukuoka: "/images/locations/fukuoka.png",
-    福岡: "/images/locations/fukuoka.png",
-    nagoya: "/images/locations/nagoya.png",
-    名古屋: "/images/locations/nagoya.png",
-    paris: "/images/locations/paris.png",
-    巴黎: "/images/locations/paris.png",
-    london: "/images/locations/london.png",
-    倫敦: "/images/locations/london.png",
-    hawaii: "/images/locations/hawaii.png",
-    夏威夷: "/images/locations/hawaii.png",
-    seoul: "/images/locations/seoul.png",
-    首爾: "/images/locations/seoul.png",
-    korea: "/images/locations/seoul.png",
-    韓國: "/images/locations/seoul.png",
-    newyork: "/images/locations/newyork.png",
-    紐約: "/images/locations/newyork.png",
-    usa: "/images/locations/newyork.png",
-    美國: "/images/locations/newyork.png",
-    rome: "/images/locations/rome.png",
-    羅馬: "/images/locations/rome.png",
-    italy: "/images/locations/rome.png",
-    義大利: "/images/locations/rome.png",
-    spain: "/images/locations/spain.png",
-    西班牙: "/images/locations/spain.png",
-    brazil: "/images/locations/brazil.png",
-    巴西: "/images/locations/brazil.png",
-    egypt: "/images/locations/egypt.png",
-    埃及: "/images/locations/egypt.png",
-    greece: "/images/locations/greece.png",
-    希臘: "/images/locations/greece.png",
-    sydney: "/images/locations/sydney.png",
-    雪梨: "/images/locations/sydney.png",
-    australia: "/images/locations/sydney.png",
-    澳洲: "/images/locations/sydney.png",
-    thailand: "/images/locations/tailand.png",
-    泰國: "/images/locations/tailand.png",
-    bangkok: "/images/locations/tailand.png",
-    曼谷: "/images/locations/tailand.png",
-    uk: "/images/locations/london.png",
-    英國: "/images/locations/london.png",
-    france: "/images/locations/paris.png",
-    法國: "/images/locations/paris.png",
-    japan: "/images/locations/tokyo.png",
-    日本: "/images/locations/tokyo.png",
+    tokyo: getAssetUrl("/images/locations/tokyo.png"),
+    東京: getAssetUrl("/images/locations/tokyo.png"),
+    osaka: getAssetUrl("/images/locations/osaka.png"),
+    大阪: getAssetUrl("/images/locations/osaka.png"),
+    kyoto: getAssetUrl("/images/locations/kyoto.png"),
+    京都: getAssetUrl("/images/locations/kyoto.png"),
+    fukuoka: getAssetUrl("/images/locations/fukuoka.png"),
+    福岡: getAssetUrl("/images/locations/fukuoka.png"),
+    nagoya: getAssetUrl("/images/locations/nagoya.png"),
+    名古屋: getAssetUrl("/images/locations/nagoya.png"),
+    paris: getAssetUrl("/images/locations/paris.png"),
+    巴黎: getAssetUrl("/images/locations/paris.png"),
+    london: getAssetUrl("/images/locations/london.png"),
+    倫敦: getAssetUrl("/images/locations/london.png"),
+    hawaii: getAssetUrl("/images/locations/hawaii.png"),
+    夏威夷: getAssetUrl("/images/locations/hawaii.png"),
+    seoul: getAssetUrl("/images/locations/seoul.png"),
+    首爾: getAssetUrl("/images/locations/seoul.png"),
+    korea: getAssetUrl("/images/locations/seoul.png"),
+    韓國: getAssetUrl("/images/locations/seoul.png"),
+    newyork: getAssetUrl("/images/locations/newyork.png"),
+    紐約: getAssetUrl("/images/locations/newyork.png"),
+    usa: getAssetUrl("/images/locations/newyork.png"),
+    美國: getAssetUrl("/images/locations/newyork.png"),
+    rome: getAssetUrl("/images/locations/rome.png"),
+    羅馬: getAssetUrl("/images/locations/rome.png"),
+    italy: getAssetUrl("/images/locations/rome.png"),
+    義大利: getAssetUrl("/images/locations/rome.png"),
+    spain: getAssetUrl("/images/locations/spain.png"),
+    西班牙: getAssetUrl("/images/locations/spain.png"),
+    brazil: getAssetUrl("/images/locations/brazil.png"),
+    巴西: getAssetUrl("/images/locations/brazil.png"),
+    egypt: getAssetUrl("/images/locations/egypt.png"),
+    埃及: getAssetUrl("/images/locations/egypt.png"),
+    greece: getAssetUrl("/images/locations/greece.png"),
+    希臘: getAssetUrl("/images/locations/greece.png"),
+    sydney: getAssetUrl("/images/locations/sydney.png"),
+    雪梨: getAssetUrl("/images/locations/sydney.png"),
+    australia: getAssetUrl("/images/locations/sydney.png"),
+    澳洲: getAssetUrl("/images/locations/sydney.png"),
+    thailand: getAssetUrl("/images/locations/tailand.png"),
+    泰國: getAssetUrl("/images/locations/tailand.png"),
+    bangkok: getAssetUrl("/images/locations/tailand.png"),
+    曼谷: getAssetUrl("/images/locations/tailand.png"),
+    uk: getAssetUrl("/images/locations/london.png"),
+    英國: getAssetUrl("/images/locations/london.png"),
+    france: getAssetUrl("/images/locations/paris.png"),
+    法國: getAssetUrl("/images/locations/paris.png"),
+    japan: getAssetUrl("/images/locations/tokyo.png"),
+    日本: getAssetUrl("/images/locations/tokyo.png"),
   };
 
-  const defaultImages = ["/images/home.png", "/images/locations/tokyo.png"];
+  const defaultImages = [getAssetUrl("/images/home.png"), getAssetUrl("/images/locations/tokyo.png")];
 
   const handleAddTrip = (e) => {
     e.preventDefault();
@@ -97,7 +98,7 @@ const Home = () => {
       {/* Top Navigation Bar */}
       <div className="top-nav-bar">
         <Link to="/" style={{ position: "absolute", left: "20px", display: "flex", alignItems: "center" }}>
-          <img src="/images/home.png" alt="Home" style={{ height: "40px", width: "auto" }} />
+          <img src={getAssetUrl("/images/home.png")} alt="Home" style={{ height: "40px", width: "auto" }} />
         </Link>
         <h1 className="chiikawa-header" style={{ fontSize: "1.5rem", margin: 0 }}>
           {t("appTitle")}
@@ -112,7 +113,7 @@ const Home = () => {
       <div style={{ display: "grid", gap: "20px" }}>
         {trips.length === 0 ? (
           <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <img src="/images/No_Trips_Yet.png" alt="No trips yet" style={{ width: "200px", opacity: 1, marginBottom: "20px" }} />
+            <img src={getAssetUrl("/images/No_Trips_Yet.png")} alt="No trips yet" style={{ width: "200px", opacity: 1, marginBottom: "20px" }} />
             <p style={{ color: "var(--color-text)", fontSize: "1.5rem", fontWeight: "900", marginBottom: "10px" }}>
               {t("noActivities") ? t("noActivities").replace("Activities", "Trips") : "No trips yet!"}
             </p>
@@ -148,7 +149,11 @@ const Home = () => {
                     border: "2px solid rgba(255,255,255,0.5)",
                   }}
                 >
-                  <img src={trip.image || "/images/tokyo.png"} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Trip" />
+                  <img
+                    src={getAssetUrl(trip.image) || getAssetUrl("/images/tokyo.png")}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    alt="Trip"
+                  />
                 </div>
 
                 {/* Right Content Area */}
@@ -243,7 +248,7 @@ const Home = () => {
             color: "var(--color-text)",
           }}
         >
-          <img src="/images/house.png" alt="Home" style={{ width: "50px", height: "50px", objectFit: "contain" }} />
+          <img src={getAssetUrl("/images/house.png")} alt="Home" style={{ width: "50px", height: "50px", objectFit: "contain" }} />
           <span style={{ fontSize: "0.9rem", fontWeight: "bold", marginTop: "2px" }}>{t("home")}</span>
         </Link>
         <div style={{ position: "relative", top: "-25px" }}>

@@ -4,6 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
 import { SortableItem } from "./SortableItem";
+import { getAssetUrl } from "../utils/imagePath";
 
 const DayView = ({ tripId, day, onEdit }) => {
   const { updateTripItems, deleteTripItem } = useTrips();
@@ -56,7 +57,7 @@ const DayView = ({ tripId, day, onEdit }) => {
             boxShadow: "0 4px 0 rgba(0,0,0,0.05)",
           }}
         >
-          <img src="/images/No_Activities.png" alt="No activities" style={{ width: "150px", opacity: 1, marginBottom: "15px" }} />
+          <img src={getAssetUrl("/images/No_Activities.png")} alt="No activities" style={{ width: "150px", opacity: 1, marginBottom: "15px" }} />
           <p style={{ fontSize: "1.2rem", fontWeight: "800", marginBottom: "5px" }}>{t("noActivities")}</p>
           <p style={{ fontSize: "1rem", fontWeight: "600", color: "var(--color-text-light)" }}>{t("tapToAdd")}</p>
         </div>

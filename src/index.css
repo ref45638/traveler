@@ -39,7 +39,7 @@
 body {
   font-family: var(--font-main);
   background-color: var(--color-bg);
-  background-image: url("/images/App_Background.png");
+  /* background-image is set in index.html to handle base path correctly */
   background-repeat: repeat;
   background-size: 400px;
   background-attachment: fixed;

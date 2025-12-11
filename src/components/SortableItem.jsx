@@ -2,6 +2,7 @@ import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Clock, Pencil, Trash2 } from "lucide-react";
+import { getAssetUrl } from "../utils/imagePath";
 
 export function SortableItem({ id, item, onEdit, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -36,7 +37,7 @@ export function SortableItem({ id, item, onEdit, onDelete }) {
         {item.note && <p style={{ fontSize: "0.9rem", color: "var(--color-text-light)", whiteSpace: "pre-wrap" }}>{item.note}</p>}
         {item.image && (
           <img
-            src={item.image}
+            src={getAssetUrl(item.image)}
             alt="Note"
             style={{ marginTop: "10px", borderRadius: "8px", maxWidth: "100%", maxHeight: "200px", objectFit: "cover" }}
           />
