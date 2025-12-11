@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
-import { ArrowLeft, Map, DollarSign, CheckSquare, FileText, Plus } from "lucide-react";
+import { ArrowLeft, Map, DollarSign, CheckSquare, FileText, Plus, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AddItemModal from "../components/AddItemModal";
 import DayView from "../components/DayView";
@@ -10,6 +10,7 @@ import ExpenseSummary from "../components/ExpenseSummary";
 import ExpenseList from "../components/ExpenseList";
 import AddExpenseModal from "../components/AddExpenseModal";
 import PayerManagerModal from "../components/PayerManagerModal";
+import ShareModal from "../components/ShareModal";
 
 const TripDetails = () => {
   const { tripId } = useParams();
@@ -24,6 +25,7 @@ const TripDetails = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showPayerModal, setShowPayerModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
 
@@ -179,7 +181,36 @@ const TripDetails = () => {
         <Link to="/" style={{ color: "var(--color-text)" }}>
           <ArrowLeft />
         </Link>
-        <h1 style={{ fontSize: "1.2rem", margin: 0 }}>{trip.title}</h1>
+        <h1 style={{ fontSize: "1.2rem", margin: 0, flex: 1 }}>{trip.title}</h1>
+        {/* Share Button */}
+        <button
+          onClick={() => setShowShareModal(true)}
+          style={{
+            background: "none",
+            color: "var(--color-text)",
+            padding: "8px",
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+          title={t("share")}
+        >
+          <Users size={20} />
+          {trip.shares && trip.shares.length > 0 && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                backgroundColor: "#FFB7C5",
+                color: "#4A3B32",
+                borderRadius: "10px",
+                padding: "2px 6px",
+                fontWeight: "bold",
+              }}
+            >
+              {trip.shares.length}
+            </span>
+          )}
+        </button>
       </header>
 
       {/* Main Content */}
@@ -275,6 +306,8 @@ const TripDetails = () => {
           onRename={(oldName, newName) => renamePayer(trip.id, oldName, newName)}
         />
       )}
+
+      {showShareModal && <ShareModal tripId={trip.id} onClose={() => setShowShareModal(false)} />}
     </div>
   );
 };

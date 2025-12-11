@@ -7,6 +7,7 @@ import TripDetails from "./pages/TripDetails";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import AcceptInvite from "./pages/AcceptInvite";
 
 import { useTrips } from "./context/TripContext";
 
@@ -46,6 +47,7 @@ function App() {
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/trip/:tripId/*" element={<TripDetails />} />
+                      <Route path="/invite/:inviteCode" element={<AcceptInvite />} />
                     </Routes>
                   </ProtectedRoute>
                 }

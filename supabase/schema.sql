@@ -1,174 +1,312 @@
+-- ============================================
+-- Traveler App: Complete Database Schema
+-- ============================================
+-- For initial project setup, execute this entire script in Supabase SQL Editor.
+-- This creates all tables, enables RLS, and sets up policies.
+
 -- Enable UUID extension
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. PROFILES (Users)
-create table profiles (
-  id uuid references auth.users not null primary key,
-  email text,
-  full_name text,
-  avatar_url text,
-  updated_at timestamp with time zone
-);
+-- ============================================
+-- 1. TABLES
+-- ============================================
 
--- 2. TRIPS
-create table trips (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references auth.users not null, -- Links to the logged-in user
-  title text not null,
-  start_date date,
-  end_date date,
-  location text,
-  image_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- PROFILES (Users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
+  email TEXT,
+  full_name TEXT,
+  avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE
 );
 
--- 3. TRIP DAYS
-create table trip_days (
-  id uuid default uuid_generate_v4() primary key,
-  trip_id uuid references trips(id) on delete cascade not null,
-  day_index integer not null,
-  date date not null
+-- TRIPS
+CREATE TABLE trips (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  title TEXT NOT NULL,
+  start_date DATE,
+  end_date DATE,
+  location TEXT,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. TRIP ITEMS (Itinerary)
-create table trip_items (
-  id uuid default uuid_generate_v4() primary key,
-  day_id uuid references trip_days(id) on delete cascade not null,
-  type text, -- 'activity', 'food', 'transport', etc.
-  title text,
-  description text,
-  time text,
-  location text,
-  cost numeric,
-  image text,
-  completed boolean default false,
-  order_index integer
+-- TRIP DAYS
+CREATE TABLE trip_days (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  day_index INTEGER NOT NULL,
+  date DATE NOT NULL
 );
 
--- 5. EXPENSES
-create table expenses (
-  id uuid default uuid_generate_v4() primary key,
-  trip_id uuid references trips(id) on delete cascade not null,
-  title text not null,
-  amount numeric not null,
-  payer text,
-  date date,
-  category text,
-  note text,
-  order_index integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- TRIP ITEMS (Itinerary)
+CREATE TABLE trip_items (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  day_id UUID REFERENCES trip_days(id) ON DELETE CASCADE NOT NULL,
+  type TEXT,
+  title TEXT,
+  description TEXT,
+  time TEXT,
+  location TEXT,
+  cost NUMERIC,
+  image TEXT,
+  completed BOOLEAN DEFAULT false,
+  order_index INTEGER
 );
 
--- 6. PAYERS
-create table payers (
-  id uuid default uuid_generate_v4() primary key,
-  trip_id uuid references trips(id) on delete cascade not null,
-  name text not null
+-- EXPENSES
+CREATE TABLE expenses (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  payer TEXT,
+  date DATE,
+  category TEXT,
+  note TEXT,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable Row Level Security (RLS)
-alter table profiles enable row level security;
-alter table trips enable row level security;
-alter table trip_days enable row level security;
-alter table trip_items enable row level security;
-alter table expenses enable row level security;
-alter table payers enable row level security;
-
--- Create Policies (Allow users to see/edit ONLY their own trips)
-
--- Profiles: Users can see and update their own profile
-create policy "Public profiles are viewable by everyone." on profiles for select using ( true );
-create policy "Users can insert their own profile." on profiles for insert with check ( auth.uid() = id );
-create policy "Users can update own profile." on profiles for update using ( auth.uid() = id );
-
--- Trips: Users can only see/edit trips where they are the owner (user_id)
-create policy "Users can view own trips" on trips for select using ( auth.uid() = user_id );
-create policy "Users can insert own trips" on trips for insert with check ( auth.uid() = user_id );
-create policy "Users can update own trips" on trips for update using ( auth.uid() = user_id );
-create policy "Users can delete own trips" on trips for delete using ( auth.uid() = user_id );
-
--- Helper function to check trip ownership for child tables
--- (Simple approach: we assume if you can see the trip, you can see the details. 
--- Since we filtered trips by user_id, we can join or just rely on the app logic + RLS.
--- For strict RLS, we check if the parent trip belongs to the user.)
-
--- Trip Days
-create policy "Users can view days of own trips" on trip_days for select using (
-  exists ( select 1 from trips where trips.id = trip_days.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can insert days to own trips" on trip_days for insert with check (
-  exists ( select 1 from trips where trips.id = trip_days.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can update days of own trips" on trip_days for update using (
-  exists ( select 1 from trips where trips.id = trip_days.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can delete days of own trips" on trip_days for delete using (
-  exists ( select 1 from trips where trips.id = trip_days.trip_id and trips.user_id = auth.uid() )
+-- PAYERS
+CREATE TABLE payers (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL
 );
 
--- Trip Items
-create policy "Users can view items of own trips" on trip_items for select using (
-  exists ( select 1 from trip_days join trips on trip_days.trip_id = trips.id where trip_days.id = trip_items.day_id and trips.user_id = auth.uid() )
-);
-create policy "Users can insert items to own trips" on trip_items for insert with check (
-  exists ( select 1 from trip_days join trips on trip_days.trip_id = trips.id where trip_days.id = trip_items.day_id and trips.user_id = auth.uid() )
-);
-create policy "Users can update items of own trips" on trip_items for update using (
-  exists ( select 1 from trip_days join trips on trip_days.trip_id = trips.id where trip_days.id = trip_items.day_id and trips.user_id = auth.uid() )
-);
-create policy "Users can delete items of own trips" on trip_items for delete using (
-  exists ( select 1 from trip_days join trips on trip_days.trip_id = trips.id where trip_days.id = trip_items.day_id and trips.user_id = auth.uid() )
+-- TRIP SHARES (Sharing relationships)
+CREATE TABLE trip_shares (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('editor')),
+  shared_by UUID REFERENCES auth.users NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(trip_id, user_id)
 );
 
--- Expenses
-create policy "Users can view expenses of own trips" on expenses for select using (
-  exists ( select 1 from trips where trips.id = expenses.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can insert expenses to own trips" on expenses for insert with check (
-  exists ( select 1 from trips where trips.id = expenses.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can update expenses of own trips" on expenses for update using (
-  exists ( select 1 from trips where trips.id = expenses.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can delete expenses of own trips" on expenses for delete using (
-  exists ( select 1 from trips where trips.id = expenses.trip_id and trips.user_id = auth.uid() )
+-- TRIP INVITES (Invite links)
+CREATE TABLE trip_invites (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  invite_code TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('editor')),
+  created_by UUID REFERENCES auth.users NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  max_uses INTEGER DEFAULT NULL,
+  use_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Payers
-create policy "Users can view payers of own trips" on payers for select using (
-  exists ( select 1 from trips where trips.id = payers.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can insert payers to own trips" on payers for insert with check (
-  exists ( select 1 from trips where trips.id = payers.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can update payers of own trips" on payers for update using (
-  exists ( select 1 from trips where trips.id = payers.trip_id and trips.user_id = auth.uid() )
-);
-create policy "Users can delete payers of own trips" on payers for delete using (
-  exists ( select 1 from trips where trips.id = payers.trip_id and trips.user_id = auth.uid() )
-);
+-- ============================================
+-- 2. ENABLE ROW LEVEL SECURITY
+-- ============================================
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_days ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_invites ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- 3. RLS POLICIES
+-- ============================================
+
+-- PROFILES
+CREATE POLICY "Public profiles are viewable by everyone." ON profiles 
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own profile." ON profiles 
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile." ON profiles 
+  FOR UPDATE USING (auth.uid() = id);
+
+-- TRIPS
+CREATE POLICY "Users can view own trips" ON trips 
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own trips" ON trips 
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own trips" ON trips 
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own trips" ON trips 
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- TRIP DAYS
+CREATE POLICY "Users can view days of own trips" ON trip_days 
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert days to own trips" ON trip_days 
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can update days of own trips" ON trip_days 
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete days of own trips" ON trip_days 
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = trip_days.trip_id AND trips.user_id = auth.uid())
+  );
+
+-- TRIP ITEMS
+CREATE POLICY "Users can view items of own trips" ON trip_items 
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trips ON trip_days.trip_id = trips.id 
+      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can insert items to own trips" ON trip_items 
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trips ON trip_days.trip_id = trips.id 
+      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update items of own trips" ON trip_items 
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trips ON trip_days.trip_id = trips.id 
+      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete items of own trips" ON trip_items 
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trips ON trip_days.trip_id = trips.id 
+      WHERE trip_days.id = trip_items.day_id AND trips.user_id = auth.uid()
+    )
+  );
+
+-- EXPENSES
+CREATE POLICY "Users can view expenses of own trips" ON expenses 
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert expenses to own trips" ON expenses 
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can update expenses of own trips" ON expenses 
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete expenses of own trips" ON expenses 
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = expenses.trip_id AND trips.user_id = auth.uid())
+  );
+
+-- PAYERS
+CREATE POLICY "Users can view payers of own trips" ON payers 
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert payers to own trips" ON payers 
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can update payers of own trips" ON payers 
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete payers of own trips" ON payers 
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM trips WHERE trips.id = payers.trip_id AND trips.user_id = auth.uid())
+  );
+
+-- TRIP SHARES
+CREATE POLICY "Users can view own shares" ON trip_shares 
+  FOR SELECT USING (user_id = auth.uid() OR shared_by = auth.uid());
+
+CREATE POLICY "Users can create shares for own trips" ON trip_shares 
+  FOR INSERT WITH CHECK (
+    trip_id IN (SELECT id FROM trips WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete shares for own trips" ON trip_shares 
+  FOR DELETE USING (
+    trip_id IN (SELECT id FROM trips WHERE user_id = auth.uid())
+  );
+
+-- TRIP INVITES
+CREATE POLICY "Users can view own invites" ON trip_invites 
+  FOR SELECT USING (created_by = auth.uid());
+
+CREATE POLICY "Users can create invites for own trips" ON trip_invites 
+  FOR INSERT WITH CHECK (
+    trip_id IN (SELECT id FROM trips WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete own invites" ON trip_invites 
+  FOR DELETE USING (created_by = auth.uid());
+
+CREATE POLICY "Users can update own invites" ON trip_invites 
+  FOR UPDATE USING (created_by = auth.uid());
+
+-- ============================================
+-- 4. INDEXES
+-- ============================================
+
+CREATE INDEX idx_trip_shares_trip_id ON trip_shares(trip_id);
+CREATE INDEX idx_trip_shares_user_id ON trip_shares(user_id);
+CREATE INDEX idx_trip_invites_trip_id ON trip_invites(trip_id);
+CREATE INDEX idx_trip_invites_invite_code ON trip_invites(invite_code);
+
+-- ============================================
+-- 5. FUNCTIONS & TRIGGERS
+-- ============================================
 
 -- Trigger to create profile on signup
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, email, full_name, avatar_url)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
-  return new;
-end;
-$$ language plpgsql security definer;
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url)
+  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
-
-create or replace function delete_user()
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  delete from auth.users where id = auth.uid();
-end;
+-- Function to delete user account
+CREATE OR REPLACE FUNCTION delete_user()
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
 $$;
+
+-- ============================================
+-- Setup Complete!
+-- ============================================

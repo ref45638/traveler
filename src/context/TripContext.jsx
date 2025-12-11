@@ -63,7 +63,6 @@ export const TripProvider = ({ children }) => {
           payers (*)
         `
         )
-        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -74,7 +73,9 @@ export const TripProvider = ({ children }) => {
         startDate: trip.start_date,
         endDate: trip.end_date,
         image: trip.image_url,
+        isOwner: trip.user_id === userId,
         expenses: trip.expenses ? trip.expenses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
+        shares: trip.shares || [],
         days: trip.days
           .sort((a, b) => a.day_index - b.day_index)
           .map((day) => ({
@@ -397,6 +398,192 @@ export const TripProvider = ({ children }) => {
     }
   };
 
+  // ========== SHARING FUNCTIONS ==========
+
+  const shareTrip = async (tripId, email, role = "editor") => {
+    try {
+      // 1. Find user by email
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .single();
+
+      if (profileError || !profileData) {
+        throw new Error("找不到此 Email 的使用者");
+      }
+
+      // 2. Check if user is trying to share with themselves
+      if (profileData.id === user.id) {
+        throw new Error("無法分享給自己");
+      }
+
+      // 3. Check if already shared
+      const { data: existingShare } = await supabase
+        .from("trip_shares")
+        .select("id")
+        .eq("trip_id", tripId)
+        .eq("user_id", profileData.id)
+        .single();
+
+      if (existingShare) {
+        throw new Error("已經分享給此使用者");
+      }
+
+      // 4. Create share
+      const { error: shareError } = await supabase.from("trip_shares").insert([
+        {
+          trip_id: tripId,
+          user_id: profileData.id,
+          role: role,
+          shared_by: user.id,
+        },
+      ]);
+
+      if (shareError) throw shareError;
+
+      fetchTrips(user.id);
+      return { success: true };
+    } catch (error) {
+      console.error("Error sharing trip:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const createInviteLink = async (tripId, role = "editor", expiresInDays = 7) => {
+    try {
+      // Generate a random invite code
+      const inviteCode = `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+
+      // Calculate expiration date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+      const { data, error } = await supabase
+        .from("trip_invites")
+        .insert([
+          {
+            trip_id: tripId,
+            invite_code: inviteCode,
+            role: role,
+            created_by: user.id,
+            expires_at: expiresAt.toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        inviteCode: inviteCode,
+        expiresAt: expiresAt,
+      };
+    } catch (error) {
+      console.error("Error creating invite link:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const acceptInvite = async (inviteCode) => {
+    try {
+      if (!user) {
+        return { success: false, error: "請先登入" };
+      }
+
+      // 1. Get invite details
+      const { data: invite, error: inviteError } = await supabase
+        .from("trip_invites")
+        .select(
+          `
+          *,
+          trip:trips (
+            id,
+            title,
+            location,
+            start_date,
+            end_date,
+            user_id
+          )
+        `
+        )
+        .eq("invite_code", inviteCode)
+        .single();
+
+      if (inviteError || !invite) {
+        return { success: false, error: "無效的邀請連結" };
+      }
+
+      // 2. Check if expired
+      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+        return { success: false, error: "邀請連結已過期" };
+      }
+
+      // 3. Check if user is the owner
+      if (invite.trip.user_id === user.id) {
+        return { success: false, error: "您已經是此旅程的擁有者" };
+      }
+
+      // 4. Check if already shared
+      const { data: existingShare } = await supabase
+        .from("trip_shares")
+        .select("id")
+        .eq("trip_id", invite.trip_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingShare) {
+        return { success: false, error: "您已經加入此旅程" };
+      }
+
+      // 5. Create share
+      const { error: shareError } = await supabase.from("trip_shares").insert([
+        {
+          trip_id: invite.trip_id,
+          user_id: user.id,
+          role: invite.role,
+          shared_by: invite.created_by,
+        },
+      ]);
+
+      if (shareError) throw shareError;
+
+      // 6. Update use count
+      const { error: updateError } = await supabase
+        .from("trip_invites")
+        .update({ use_count: invite.use_count + 1 })
+        .eq("id", invite.id);
+
+      if (updateError) console.error("Error updating invite use count:", updateError);
+
+      fetchTrips(user.id);
+      return { success: true, trip: invite.trip };
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const removeSharedUser = async (tripId, userId) => {
+    try {
+      const { error } = await supabase.from("trip_shares").delete().eq("trip_id", tripId).eq("user_id", userId);
+
+      if (error) throw error;
+
+      fetchTrips(user.id);
+      return { success: true };
+    } catch (error) {
+      console.error("Error removing shared user:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const getSharedUsers = (tripId) => {
+    const trip = trips.find((t) => t.id === tripId);
+    return trip?.shares || [];
+  };
+
   // Placeholder for updateTripItems (drag and drop reordering)
   const updateTripItems = async (tripId, dayId, newItems) => {
     // Optimistic Update
@@ -464,6 +651,12 @@ export const TripProvider = ({ children }) => {
         addPayer,
         deletePayer,
         renamePayer,
+        // Sharing functions
+        shareTrip,
+        createInviteLink,
+        acceptInvite,
+        removeSharedUser,
+        getSharedUsers,
       }}
     >
       {children}
