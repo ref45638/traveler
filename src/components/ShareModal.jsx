@@ -52,7 +52,7 @@ const ShareModal = ({ tripId, onClose }) => {
     };
 
     const handleCopyLink = () => {
-        const inviteUrl = `${window.location.origin}${import.meta.env.BASE_URL}invite/${inviteCode}`;
+        const inviteUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/invite/${inviteCode}`;
         navigator.clipboard.writeText(inviteUrl);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -65,7 +65,7 @@ const ShareModal = ({ tripId, onClose }) => {
     };
 
     const getInviteUrl = () => {
-        return `${window.location.origin}${import.meta.env.BASE_URL}invite/${inviteCode}`;
+        return `${window.location.origin}${import.meta.env.BASE_URL}#/invite/${inviteCode}`;
     };
 
     return (
