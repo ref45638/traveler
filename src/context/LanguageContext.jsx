@@ -94,6 +94,15 @@ const translations = {
     sharedBy: "由 {name} 分享",
     youAreOwner: "您是擁有者",
     youAreEditor: "您是編輯者",
+    // Delete Confirmations
+    deleteItemConfirm: "確定要刪除這個項目嗎？",
+    deleteAccountConfirm: "確定要刪除帳號嗎？此動作無法復原！",
+    deleteAccountFail: "刪除帳號失敗，請稍後再試。",
+    removeShareConfirm: "確定要移除此使用者的分享權限嗎？",
+    // Profile
+    logout: "登出",
+    deleting: "刪除中...",
+    deleteAccount: "刪除帳號",
   },
   en: {
     appTitle: "Chiikawa Travel",
@@ -184,6 +193,15 @@ const translations = {
     sharedBy: "Shared by {name}",
     youAreOwner: "You are the owner",
     youAreEditor: "You are an editor",
+    // Delete Confirmations
+    deleteItemConfirm: "Delete this item?",
+    deleteAccountConfirm: "Are you sure you want to delete your account? This action cannot be undone!",
+    deleteAccountFail: "Failed to delete account. Please try again later.",
+    removeShareConfirm: "Are you sure you want to remove this user's access?",
+    // Profile
+    logout: "Logout",
+    deleting: "Deleting...",
+    deleteAccount: "Delete Account",
   },
 };
 

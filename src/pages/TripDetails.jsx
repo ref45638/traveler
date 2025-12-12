@@ -30,6 +30,8 @@ const TripDetails = () => {
   const [editingExpense, setEditingExpense] = useState(null);
   const dayTabsRef = useRef(null);
   const dayButtonRefs = useRef([]);
+  const carouselContainerRef = useRef(null);
+  const [slideWidth, setSlideWidth] = useState(375);
 
   // Auto-scroll day tabs when currentDayIndex changes
   useEffect(() => {
@@ -42,14 +44,26 @@ const TripDetails = () => {
       const scrollLeft = container.scrollLeft;
 
       // Calculate the ideal scroll position to center the button
-      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+      const targetScroll = buttonLeft - containerWidth / 2 + buttonWidth / 2;
 
       container.scrollTo({
         left: Math.max(0, targetScroll),
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
   }, [currentDayIndex]);
+
+  // Update slideWidth when container size changes
+  useEffect(() => {
+    const updateWidth = () => {
+      if (carouselContainerRef.current) {
+        setSlideWidth(carouselContainerRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [activeTab]);
 
   if (!trip) return <div>{t("tripNotFound")}</div>;
 
@@ -83,40 +97,52 @@ const TripDetails = () => {
             </div>
           );
         }
+
         return (
-          <div style={{ overflow: "visible", touchAction: "pan-y", minHeight: "60vh" }}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentDayIndex}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(e, { offset, velocity }) => {
-                  const swipe = Math.abs(offset.x) * velocity.x;
-                  if (swipe < -10000) {
-                    if (currentDayIndex < trip.days.length - 1) setCurrentDayIndex(currentDayIndex + 1);
-                  } else if (swipe > 10000) {
-                    if (currentDayIndex > 0) setCurrentDayIndex(currentDayIndex - 1);
-                  }
-                }}
-                style={{ touchAction: "none", minHeight: "60vh" }}
-              >
-                {trip.days[currentDayIndex] && (
+          <div ref={carouselContainerRef} style={{ overflow: "hidden", minHeight: "60vh" }}>
+            <motion.div
+              style={{
+                display: "flex",
+                width: `${trip.days.length * 100}%`,
+              }}
+              drag="x"
+              dragConstraints={{
+                left: -(trip.days.length - 1) * slideWidth,
+                right: 0,
+              }}
+              dragElastic={0.1}
+              dragMomentum={false}
+              animate={{ x: -currentDayIndex * slideWidth }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onDragEnd={(e, { offset, velocity }) => {
+                const swipe = offset.x + velocity.x * 50;
+                if (swipe < -50 && currentDayIndex < trip.days.length - 1) {
+                  setCurrentDayIndex(currentDayIndex + 1);
+                } else if (swipe > 50 && currentDayIndex > 0) {
+                  setCurrentDayIndex(currentDayIndex - 1);
+                }
+              }}
+            >
+              {trip.days.map((day, index) => (
+                <div
+                  key={day.id}
+                  style={{
+                    width: `${100 / trip.days.length}%`,
+                    flexShrink: 0,
+                    boxSizing: "border-box",
+                  }}
+                >
                   <DayView
                     tripId={trip.id}
-                    day={trip.days[currentDayIndex]}
+                    day={day}
                     onEdit={(item) => {
                       setEditingItem(item);
                       setShowAddModal(true);
                     }}
                   />
-                )}
-              </motion.div>
-            </AnimatePresence>
+                </div>
+              ))}
+            </motion.div>
           </div>
         );
       case "expenses":
@@ -230,9 +256,7 @@ const TripDetails = () => {
       )}
 
       {/* Main Content */}
-      <div style={{ minHeight: "60vh" }}>
-        {renderContent()}
-      </div>
+      <div style={{ minHeight: "60vh" }}>{renderContent()}</div>
 
       {/* Bottom Nav - same as Home */}
       <div className="nav-bar">

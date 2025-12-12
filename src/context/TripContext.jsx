@@ -149,6 +149,12 @@ export const TripProvider = ({ children }) => {
 
   const addTripItem = async (tripId, dayId, item) => {
     try {
+      // Get current max order_index for this day
+      const trip = trips.find((t) => t.id === tripId);
+      const day = trip?.days?.find((d) => d.id === dayId);
+      const currentItems = day?.items || [];
+      const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order_index || 0), 0);
+
       const { error } = await supabase.from("trip_items").insert([
         {
           day_id: dayId,
@@ -160,6 +166,7 @@ export const TripProvider = ({ children }) => {
           type: item.type,
           image: item.image,
           completed: false,
+          order_index: maxOrder + 1,
         },
       ]);
 
@@ -403,11 +410,7 @@ export const TripProvider = ({ children }) => {
   const shareTrip = async (tripId, email, role = "editor") => {
     try {
       // 1. Find user by email
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .single();
+      const { data: profileData, error: profileError } = await supabase.from("profiles").select("id").eq("email", email).single();
 
       if (profileError || !profileData) {
         throw new Error("找不到此 Email 的使用者");
@@ -419,12 +422,7 @@ export const TripProvider = ({ children }) => {
       }
 
       // 3. Check if already shared
-      const { data: existingShare } = await supabase
-        .from("trip_shares")
-        .select("id")
-        .eq("trip_id", tripId)
-        .eq("user_id", profileData.id)
-        .single();
+      const { data: existingShare } = await supabase.from("trip_shares").select("id").eq("trip_id", tripId).eq("user_id", profileData.id).single();
 
       if (existingShare) {
         throw new Error("已經分享給此使用者");
@@ -526,12 +524,7 @@ export const TripProvider = ({ children }) => {
       }
 
       // 4. Check if already shared
-      const { data: existingShare } = await supabase
-        .from("trip_shares")
-        .select("id")
-        .eq("trip_id", invite.trip_id)
-        .eq("user_id", user.id)
-        .single();
+      const { data: existingShare } = await supabase.from("trip_shares").select("id").eq("trip_id", invite.trip_id).eq("user_id", user.id).single();
 
       if (existingShare) {
         return { success: false, error: "您已經加入此旅程" };

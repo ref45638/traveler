@@ -3,14 +3,16 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Clock, Pencil, Trash2 } from "lucide-react";
 import { getAssetUrl } from "../utils/imagePath";
+import { useLanguage } from "../context/LanguageContext";
 
 export function SortableItem({ id, item, onEdit, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const { t } = useLanguage();
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    touchAction: "none", // Required for pointer events on mobile
+    // Remove touchAction: none from card - only drag handle should block touch
     marginBottom: "15px",
     padding: "15px",
     display: "flex",
@@ -23,7 +25,19 @@ export function SortableItem({ id, item, onEdit, onDelete }) {
 
   return (
     <div ref={setNodeRef} style={style} className="card">
-      <div {...attributes} {...listeners} style={{ display: "flex", alignItems: "center", color: "#ccc", cursor: "grab" }}>
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          color: "#ccc",
+          cursor: "grab",
+          touchAction: "none", // Only drag handle blocks touch for sorting
+          padding: "10px 5px", // Bigger touch target
+          margin: "-10px -5px", // Compensate padding
+        }}
+      >
         <GripVertical size={20} />
       </div>
       <div style={{ flex: 1 }}>
@@ -56,7 +70,7 @@ export function SortableItem({ id, item, onEdit, onDelete }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (confirm("Delete this item?")) onDelete(item.id);
+            if (confirm(t("deleteItemConfirm"))) onDelete(item.id);
           }}
           style={{ padding: "5px", color: "#ff6b6b", background: "none" }}
         >

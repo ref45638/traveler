@@ -13,7 +13,9 @@ const Profile = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
       }
@@ -27,7 +29,7 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm("確定要刪除帳號嗎？此動作無法復原！")) {
+    if (window.confirm(t("deleteAccountConfirm"))) {
       setLoading(true);
       try {
         const { error } = await supabase.rpc("delete_user");
@@ -36,7 +38,7 @@ const Profile = () => {
         navigate("/login");
       } catch (error) {
         console.error("Error deleting account:", error);
-        alert("刪除帳號失敗，請稍後再試。");
+        alert(t("deleteAccountFail"));
       } finally {
         setLoading(false);
       }
@@ -87,7 +89,7 @@ const Profile = () => {
           }}
         >
           <LogOut size={20} />
-          登出
+          {t("logout")}
         </button>
 
         <button
@@ -107,7 +109,7 @@ const Profile = () => {
           }}
         >
           <Trash2 size={20} />
-          {loading ? "刪除中..." : "刪除帳號"}
+          {loading ? t("deleting") : t("deleteAccount")}
         </button>
       </div>
 
