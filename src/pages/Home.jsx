@@ -3,13 +3,14 @@ import { getAssetUrl } from "../utils/imagePath";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
 import { Link } from "react-router-dom";
-import { Plus, Calendar, Trash2, Settings, MapPin, PawPrint, Home as HomeIcon, User } from "lucide-react";
+import { Plus, Calendar, Trash2, Settings, MapPin, PawPrint, Home as HomeIcon, User, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
 const Home = () => {
-  const { trips, addTrip, deleteTrip } = useTrips();
+  const { trips, addTrip, updateTrip, deleteTrip } = useTrips();
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
+  const [editingTrip, setEditingTrip] = useState(null); // null = new trip, trip object = editing
   const [newTrip, setNewTrip] = useState({ title: "", startDate: "", endDate: "", location: "" });
 
   const cardColors = ["var(--card-bg-pink)", "var(--card-bg-blue)", "var(--card-bg-yellow)", "var(--card-bg-green)"];
@@ -87,10 +88,38 @@ const Home = () => {
         }
       }
 
-      addTrip(newTrip.title, newTrip.startDate, newTrip.endDate, newTrip.location, selectedImage);
+      if (editingTrip) {
+        // Edit mode: use existing image if location didn't change
+        const finalImage = newTrip.location !== editingTrip.location ? selectedImage : editingTrip.image;
+        updateTrip(editingTrip.id, newTrip.title, newTrip.startDate, newTrip.endDate, newTrip.location, finalImage);
+      } else {
+        // Add mode
+        addTrip(newTrip.title, newTrip.startDate, newTrip.endDate, newTrip.location, selectedImage);
+      }
+
       setShowModal(false);
+      setEditingTrip(null);
       setNewTrip({ title: "", startDate: "", endDate: "", location: "" });
     }
+  };
+
+  const handleEditTrip = (trip, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingTrip(trip);
+    setNewTrip({
+      title: trip.title,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      location: trip.location || "",
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingTrip(null);
+    setNewTrip({ title: "", startDate: "", endDate: "", location: "" });
   };
 
   return (
@@ -213,22 +242,52 @@ const Home = () => {
                 </div>
               </Link>
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (confirm(t("deleteConfirm"))) deleteTrip(trip.id);
-                }}
+              {/* Edit and Delete buttons */}
+              <div
                 style={{
                   position: "absolute",
                   top: "10px",
                   right: "10px",
-                  color: "#ff6b6b",
-                  background: "none",
-                  padding: "5px",
+                  display: "flex",
+                  gap: "5px",
                 }}
               >
-                <Trash2 size={20} />
-              </button>
+                <button
+                  onClick={(e) => handleEditTrip(trip, e)}
+                  style={{
+                    color: "var(--color-text)",
+                    background: "rgba(255,255,255,0.8)",
+                    padding: "5px",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (confirm(t("deleteConfirm"))) deleteTrip(trip.id);
+                  }}
+                  style={{
+                    color: "#ff6b6b",
+                    background: "rgba(255,255,255,0.8)",
+                    padding: "5px",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </motion.div>
           ))
         )}
@@ -310,7 +369,7 @@ const Home = () => {
             className="card"
             style={{ width: "90%", maxWidth: "400px", backgroundColor: "#FFF" }}
           >
-            <h2 className="chiikawa-header">{t("newTrip")}</h2>
+            <h2 className="chiikawa-header">{editingTrip ? t("editTrip") || "編輯旅程" : t("newTrip")}</h2>
             <form onSubmit={handleAddTrip}>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>{t("title")}</label>
@@ -358,13 +417,13 @@ const Home = () => {
               <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                   style={{ padding: "10px 20px", borderRadius: "20px", background: "#eee", border: "2px solid #4A3B32" }}
                 >
                   {t("cancel")}
                 </button>
                 <button type="submit" className="btn-primary" style={{ padding: "10px 20px", borderRadius: "20px" }}>
-                  {t("create")}
+                  {editingTrip ? t("save") || "保存" : t("create")}
                 </button>
               </div>
             </form>

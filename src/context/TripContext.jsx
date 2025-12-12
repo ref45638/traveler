@@ -147,6 +147,105 @@ export const TripProvider = ({ children }) => {
     }
   };
 
+  const updateTrip = async (tripId, title, startDate, endDate, location, image) => {
+    if (!user) return;
+
+    try {
+      // Get the current trip
+      const currentTrip = trips.find((t) => t.id === tripId);
+      if (!currentTrip) return;
+
+      // 1. Update Trip basic info
+      const { error: tripError } = await supabase
+        .from("trips")
+        .update({
+          title,
+          start_date: startDate,
+          end_date: endDate,
+          location,
+          image_url: image,
+        })
+        .eq("id", tripId);
+
+      if (tripError) throw tripError;
+
+      // 2. Handle date range changes
+      const oldStart = new Date(currentTrip.startDate);
+      const oldEnd = new Date(currentTrip.endDate);
+      const newStart = new Date(startDate);
+      const newEnd = new Date(endDate);
+
+      const oldDates = eachDayOfInterval({ start: oldStart, end: oldEnd });
+      const newDates = eachDayOfInterval({ start: newStart, end: newEnd });
+
+      // If date range changed, we need to adjust days
+      if (startDate !== currentTrip.startDate || endDate !== currentTrip.endDate) {
+        // Get existing days with their items
+        const existingDays = currentTrip.days || [];
+
+        // Create a map of date -> day data (for items)
+        const dateToItemsMap = {};
+        existingDays.forEach((day) => {
+          if (day.date) {
+            dateToItemsMap[day.date] = day.items || [];
+          }
+        });
+
+        // Delete all existing days (cascade will handle items)
+        const { error: deleteError } = await supabase
+          .from("trip_days")
+          .delete()
+          .eq("trip_id", tripId);
+
+        if (deleteError) throw deleteError;
+
+        // Create new days
+        const newDaysData = newDates.map((date, index) => ({
+          trip_id: tripId,
+          day_index: index + 1,
+          date: format(date, "yyyy-MM-dd"),
+        }));
+
+        const { data: createdDays, error: daysError } = await supabase
+          .from("trip_days")
+          .insert(newDaysData)
+          .select();
+
+        if (daysError) throw daysError;
+
+        // Re-add items for days that still exist
+        for (const newDay of createdDays) {
+          const existingItems = dateToItemsMap[newDay.date];
+          if (existingItems && existingItems.length > 0) {
+            const itemsToInsert = existingItems.map((item, idx) => ({
+              day_id: newDay.id,
+              title: item.title,
+              description: item.description,
+              time: item.time,
+              location: item.location,
+              cost: item.cost,
+              type: item.type,
+              image: item.image,
+              completed: item.completed,
+              order_index: idx,
+            }));
+
+            const { error: itemsError } = await supabase
+              .from("trip_items")
+              .insert(itemsToInsert);
+
+            if (itemsError) console.error("Error re-adding items:", itemsError);
+          }
+        }
+      }
+
+      // Refresh trips
+      fetchTrips(user.id);
+    } catch (error) {
+      console.error("Error updating trip:", error);
+    }
+  };
+
   const addTripItem = async (tripId, dayId, item) => {
     try {
       // Get current max order_index for this day
@@ -632,6 +731,7 @@ export const TripProvider = ({ children }) => {
         loading,
         user,
         addTrip,
+        updateTrip,
         deleteTrip,
         updateTripItems,
         addTripItem,
