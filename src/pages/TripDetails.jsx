@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
 import { ArrowLeft, Map, DollarSign, CheckSquare, FileText, Plus, Users } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
 import AddItemModal from "../components/AddItemModal";
 import DayView from "../components/DayView";
 import ExpenseSummary from "../components/ExpenseSummary";
@@ -29,29 +29,27 @@ const TripDetails = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
   const dayTabsRef = useRef(null);
+  const dayTabsInnerRef = useRef(null);
   const dayButtonRefs = useRef([]);
   const carouselContainerRef = useRef(null);
   const [slideWidth, setSlideWidth] = useState(375);
+  const [dayTabsConstraints, setDayTabsConstraints] = useState({ left: 0, right: 0 });
+  const carouselControls = useAnimationControls();
 
-  // Auto-scroll day tabs when currentDayIndex changes
+  // Calculate drag constraints for day tabs
   useEffect(() => {
-    if (dayButtonRefs.current[currentDayIndex] && dayTabsRef.current) {
-      const button = dayButtonRefs.current[currentDayIndex];
-      const container = dayTabsRef.current;
-      const buttonLeft = button.offsetLeft;
-      const buttonWidth = button.offsetWidth;
-      const containerWidth = container.offsetWidth;
-      const scrollLeft = container.scrollLeft;
-
-      // Calculate the ideal scroll position to center the button
-      const targetScroll = buttonLeft - containerWidth / 2 + buttonWidth / 2;
-
-      container.scrollTo({
-        left: Math.max(0, targetScroll),
-        behavior: "smooth",
-      });
-    }
-  }, [currentDayIndex]);
+    const updateDayTabsConstraints = () => {
+      if (dayTabsRef.current && dayTabsInnerRef.current) {
+        const containerWidth = dayTabsRef.current.offsetWidth;
+        const innerWidth = dayTabsInnerRef.current.scrollWidth;
+        const maxDrag = Math.max(0, innerWidth - containerWidth);
+        setDayTabsConstraints({ left: -maxDrag, right: 0 });
+      }
+    };
+    updateDayTabsConstraints();
+    window.addEventListener("resize", updateDayTabsConstraints);
+    return () => window.removeEventListener("resize", updateDayTabsConstraints);
+  }, [trip?.days?.length, activeTab]);
 
   // Update slideWidth when container size changes
   useEffect(() => {
@@ -64,6 +62,14 @@ const TripDetails = () => {
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
   }, [activeTab]);
+
+  // 同步動畫位置
+  useEffect(() => {
+    carouselControls.start({
+      x: -currentDayIndex * slideWidth,
+      transition: { type: "spring", stiffness: 400, damping: 40 },
+    });
+  }, [currentDayIndex, slideWidth, carouselControls]);
 
   if (!trip) return <div>{t("tripNotFound")}</div>;
 
@@ -112,15 +118,30 @@ const TripDetails = () => {
               }}
               dragElastic={0.1}
               dragMomentum={false}
-              animate={{ x: -currentDayIndex * slideWidth }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              animate={carouselControls}
               onDragEnd={(e, { offset, velocity }) => {
-                const swipe = offset.x + velocity.x * 50;
-                if (swipe < -50 && currentDayIndex < trip.days.length - 1) {
-                  setCurrentDayIndex(currentDayIndex + 1);
-                } else if (swipe > 50 && currentDayIndex > 0) {
-                  setCurrentDayIndex(currentDayIndex - 1);
+                const swipeThreshold = slideWidth * 0.2;
+                const velocityThreshold = 300;
+                const swipeDistance = offset.x;
+                const swipeVelocity = velocity.x;
+
+                let newIndex = currentDayIndex;
+
+                // 向左滑（下一天）
+                if ((swipeDistance < -swipeThreshold || swipeVelocity < -velocityThreshold) && currentDayIndex < trip.days.length - 1) {
+                  newIndex = currentDayIndex + 1;
                 }
+                // 向右滑（上一天）
+                else if ((swipeDistance > swipeThreshold || swipeVelocity > velocityThreshold) && currentDayIndex > 0) {
+                  newIndex = currentDayIndex - 1;
+                }
+
+                // 更新 index 並強制動畫到正確位置
+                setCurrentDayIndex(newIndex);
+                carouselControls.start({
+                  x: -newIndex * slideWidth,
+                  transition: { type: "spring", stiffness: 400, damping: 40 },
+                });
               }}
             >
               {trip.days.map((day, index) => (
@@ -219,39 +240,53 @@ const TripDetails = () => {
         </button>
       </div>
 
-      {/* Day Tabs */}
+      {/* Day Tabs - Swipeable */}
       {activeTab === "itinerary" && trip.days && trip.days.length > 0 && (
         <div
           ref={dayTabsRef}
           style={{
-            display: "flex",
-            overflowX: "auto",
+            overflow: "hidden",
             marginBottom: "10px",
-            gap: "10px",
-            scrollbarWidth: "none",
           }}
         >
-          {trip.days.map((day, index) => (
-            <button
-              key={day.id}
-              ref={(el) => (dayButtonRefs.current[index] = el)}
-              onClick={() => setCurrentDayIndex(index)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "20px",
-                backgroundColor: currentDayIndex === index ? "var(--color-primary)" : "var(--color-white)",
-                color: currentDayIndex === index ? "white" : "var(--color-text)",
-                whiteSpace: "nowrap",
-                boxShadow: "var(--shadow-soft)",
-                fontWeight: "bold",
-                flexShrink: 0,
-                border: "2px solid var(--border-color)",
-              }}
-            >
-              {t("day")} {day.dayIndex} {t("daySuffix")}
-              <span style={{ fontSize: "0.8em", marginLeft: "5px", fontWeight: "normal" }}>{day.date.slice(5)}</span>
-            </button>
-          ))}
+          <motion.div
+            ref={dayTabsInnerRef}
+            style={{
+              display: "flex",
+              gap: "10px",
+              cursor: "grab",
+              paddingRight: "20px",
+            }}
+            drag="x"
+            dragConstraints={dayTabsConstraints}
+            dragElastic={0.2}
+            dragMomentum={true}
+            dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
+            whileDrag={{ cursor: "grabbing" }}
+          >
+            {trip.days.map((day, index) => (
+              <motion.button
+                key={day.id}
+                ref={(el) => (dayButtonRefs.current[index] = el)}
+                onClick={() => setCurrentDayIndex(index)}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  backgroundColor: currentDayIndex === index ? "var(--color-primary)" : "var(--color-white)",
+                  color: currentDayIndex === index ? "white" : "var(--color-text)",
+                  whiteSpace: "nowrap",
+                  boxShadow: "var(--shadow-soft)",
+                  fontWeight: "bold",
+                  flexShrink: 0,
+                  border: "2px solid var(--border-color)",
+                }}
+              >
+                {t("day")} {day.dayIndex} {t("daySuffix")}
+                <span style={{ fontSize: "0.8em", marginLeft: "5px", fontWeight: "normal" }}>{day.date.slice(5)}</span>
+              </motion.button>
+            ))}
+          </motion.div>
         </div>
       )}
 
