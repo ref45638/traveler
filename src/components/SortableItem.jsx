@@ -36,7 +36,7 @@ export function SortableItem({ id, item, onEdit, onDelete }) {
           alignItems: "center",
           color: "#ccc",
           cursor: isDragging ? "grabbing" : "grab",
-          touchAction: "none",
+          touchAction: "pan-y", // 允許垂直滾動，只阻止水平手勢
           padding: "10px 5px",
           margin: "-10px -5px",
         }}

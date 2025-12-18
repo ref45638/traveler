@@ -1,5 +1,5 @@
 import React from "react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useTrips } from "../context/TripContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -13,9 +13,15 @@ const DayView = ({ tripId, day, onEdit }) => {
   if (!day) return null;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 400, // 需要長按 400ms 才觸發拖動
+        tolerance: 8, // 長按時如果移動超過 8 像素就取消（變成滑動捲頁）
       },
     }),
     useSensor(KeyboardSensor, {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Trash2, Edit2, GripVertical } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -85,7 +85,17 @@ const ExpenseList = ({ expenses, onDelete, onEdit, onReorder }) => {
   const { t } = useLanguage();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 400, // 需要長按 400ms 才觸發拖動
+        tolerance: 8, // 長按時如果移動超過 8 像素就取消（變成滑動捲頁）
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
