@@ -67,6 +67,7 @@ select {
   padding: 10px;
   color: var(--color-text);
   background-color: var(--color-white);
+  font-size: 16px; /* Prevents iOS Safari auto-zoom on focus */
 }
 
 input:focus,

@@ -48,6 +48,10 @@ const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers, initialD
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Blur active element to reset iOS Safari zoom
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     if (!expense.category) {
       setError(t("selectCategory") || "Please select a category");
       return;

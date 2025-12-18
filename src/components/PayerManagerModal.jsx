@@ -11,6 +11,10 @@ const PayerManagerModal = ({ onClose, payers, onAdd, onDelete, onRename }) => {
 
   const handleAdd = (e) => {
     e.preventDefault();
+    // Blur active element to reset iOS Safari zoom
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     if (newPayerName.trim()) {
       onAdd(newPayerName.trim());
       setNewPayerName("");

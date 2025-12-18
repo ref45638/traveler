@@ -27,6 +27,10 @@ const AddItemModal = ({ onClose, onAdd, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Blur active element to reset iOS Safari zoom
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     if (item.title) {
       onAdd({
         ...item,

@@ -20,6 +20,10 @@ const ShareModal = ({ tripId, onClose }) => {
 
   const handleShareByEmail = async (e) => {
     e.preventDefault();
+    // Blur active element to reset iOS Safari zoom
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     setLoading(true);
     setError("");
     setSuccess("");

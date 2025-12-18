@@ -74,6 +74,10 @@ const Home = () => {
 
   const handleAddTrip = (e) => {
     e.preventDefault();
+    // Blur active element to reset iOS Safari zoom
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     if (newTrip.title && newTrip.startDate && newTrip.endDate) {
       let selectedImage = defaultImages[0]; // Default fallback
 
