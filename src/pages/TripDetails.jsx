@@ -11,11 +11,12 @@ import ExpenseList from "../components/ExpenseList";
 import AddExpenseModal from "../components/AddExpenseModal";
 import PayerManagerModal from "../components/PayerManagerModal";
 import ShareModal from "../components/ShareModal";
+import Checklist from "../components/Checklist";
 
 const TripDetails = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { trips, addTripItem, updateTripItem, addExpense, updateExpense, reorderExpenses, deleteExpense, addPayer, deletePayer, renamePayer } =
+  const { trips, addTripItem, updateTripItem, addExpense, updateExpense, reorderExpenses, deleteExpense, addPayer, deletePayer, renamePayer, addChecklistItem, toggleChecklistItem, deleteChecklistItem } =
     useTrips();
   const { t } = useLanguage();
   const trip = trips.find((t) => t.id === tripId);
@@ -183,9 +184,12 @@ const TripDetails = () => {
         );
       case "checklist":
         return (
-          <div className="flex-center" style={{ height: "100%" }}>
-            {t("checklist")} - {t("comingSoon")}
-          </div>
+          <Checklist
+            items={trip.checklist || []}
+            onAdd={(text) => addChecklistItem(trip.id, text)}
+            onToggle={(id, completed) => toggleChecklistItem(trip.id, id, completed)}
+            onDelete={(id) => deleteChecklistItem(trip.id, id)}
+          />
         );
       case "notes":
         return (

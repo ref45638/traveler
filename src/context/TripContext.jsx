@@ -60,7 +60,8 @@ export const TripProvider = ({ children }) => {
             items:trip_items (*)
           ),
           expenses (*),
-          payers (*)
+          payers (*),
+          checklist:trip_checklists (*)
         `
         )
         .order("created_at", { ascending: false });
@@ -75,6 +76,7 @@ export const TripProvider = ({ children }) => {
         image: trip.image_url,
         isOwner: trip.user_id === userId,
         expenses: trip.expenses ? trip.expenses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
+        checklist: trip.checklist ? trip.checklist.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
         shares: trip.shares || [],
         days: trip.days
           .sort((a, b) => a.day_index - b.day_index)
@@ -676,6 +678,81 @@ export const TripProvider = ({ children }) => {
     return trip?.shares || [];
   };
 
+  // ========== CHECKLIST FUNCTIONS ==========
+
+  const addChecklistItem = async (tripId, text) => {
+    try {
+      const trip = trips.find((t) => t.id === tripId);
+      const currentList = trip?.checklist || [];
+      const maxOrder = currentList.reduce((max, item) => Math.max(max, item.order_index || 0), 0);
+      
+      const { error } = await supabase
+        .from("trip_checklists")
+        .insert([
+          {
+            trip_id: tripId,
+            text,
+            completed: false,
+            order_index: maxOrder + 1
+          }
+        ]);
+
+      if (error) throw error;
+      fetchTrips(user.id);
+    } catch (error) {
+       console.error("Error adding checklist item:", error);
+    }
+  };
+
+  const toggleChecklistItem = async (tripId, itemId, completed) => {
+    // Optimistic Update
+    setTrips(prev => prev.map(trip => {
+      if (trip.id !== tripId) return trip;
+      return {
+        ...trip,
+        checklist: trip.checklist.map(item => 
+          item.id === itemId ? { ...item, completed } : item
+        )
+      };
+    }));
+
+    try {
+      const { error } = await supabase
+        .from("trip_checklists")
+        .update({ completed })
+        .eq("id", itemId);
+
+      if (error) throw error;
+      // fetchTrips(user.id); // Skip if optimistic
+    } catch (error) {
+      console.error("Error toggling checklist item:", error);
+      fetchTrips(user.id); // Revert
+    }
+  };
+
+  const deleteChecklistItem = async (tripId, itemId) => {
+     // Optimistic
+     setTrips(prev => prev.map(trip => {
+      if (trip.id !== tripId) return trip;
+      return {
+        ...trip,
+        checklist: trip.checklist.filter(item => item.id !== itemId)
+      };
+    }));
+
+    try {
+      const { error } = await supabase
+        .from("trip_checklists")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error deleting checklist item:", error);
+      fetchTrips(user.id);
+    }
+  };
+
   // Placeholder for updateTripItems (drag and drop reordering)
   const updateTripItems = async (tripId, dayId, newItems) => {
     // Optimistic Update
@@ -750,6 +827,10 @@ export const TripProvider = ({ children }) => {
         acceptInvite,
         removeSharedUser,
         getSharedUsers,
+        // Checklist
+        addChecklistItem,
+        toggleChecklistItem,
+        deleteChecklistItem,
       }}
     >
       {children}

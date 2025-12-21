@@ -100,6 +100,16 @@ CREATE TABLE trip_invites (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- TRIP CHECKLISTS
+CREATE TABLE trip_checklists (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  text TEXT NOT NULL,
+  completed BOOLEAN DEFAULT false,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- ============================================
 -- 2. ENABLE ROW LEVEL SECURITY
 -- ============================================
@@ -112,6 +122,7 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_checklists ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- 3. HELPER FUNCTION FOR SHARING
@@ -270,6 +281,19 @@ CREATE POLICY "Users can delete own invites" ON trip_invites
 CREATE POLICY "Users can update own invites" ON trip_invites 
   FOR UPDATE USING (created_by = auth.uid());
 
+-- TRIP CHECKLISTS
+CREATE POLICY "Users can view checklists of accessible trips" ON trip_checklists 
+  FOR SELECT USING (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can insert checklists to accessible trips" ON trip_checklists 
+  FOR INSERT WITH CHECK (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can update checklists of accessible trips" ON trip_checklists 
+  FOR UPDATE USING (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can delete checklists of accessible trips" ON trip_checklists 
+  FOR DELETE USING (user_has_trip_access(trip_id));
+
 -- ============================================
 -- 5. INDEXES
 -- ============================================
@@ -278,6 +302,7 @@ CREATE INDEX idx_trip_shares_trip_id ON trip_shares(trip_id);
 CREATE INDEX idx_trip_shares_user_id ON trip_shares(user_id);
 CREATE INDEX idx_trip_invites_trip_id ON trip_invites(trip_id);
 CREATE INDEX idx_trip_invites_invite_code ON trip_invites(invite_code);
+CREATE INDEX idx_trip_checklists_trip_id ON trip_checklists(trip_id);
 
 -- ============================================
 -- 6. FUNCTIONS & TRIGGERS

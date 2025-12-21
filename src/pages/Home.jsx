@@ -149,7 +149,7 @@ const Home = () => {
           <div style={{ textAlign: "center", marginTop: "50px" }}>
             <img src={getAssetUrl("/images/No_Trips_Yet.png")} alt="No trips yet" style={{ width: "200px", opacity: 1, marginBottom: "20px" }} />
             <p style={{ color: "var(--color-text)", fontSize: "1.5rem", fontWeight: "900", marginBottom: "10px" }}>
-              {t("noActivities") ? t("noActivities").replace("Activities", "Trips") : "No trips yet!"}
+              {t("noTrips")}
             </p>
             <p style={{ color: "var(--color-text)", fontSize: "1.2rem", fontWeight: "bold" }}>{t("tapToAdd")}</p>
           </div>
@@ -374,7 +374,7 @@ const Home = () => {
             className="card"
             style={{ width: "90%", maxWidth: "400px", backgroundColor: "#FFF" }}
           >
-            <h2 className="chiikawa-header">{editingTrip ? t("editTrip") || "編輯旅程" : t("newTrip")}</h2>
+            <h2 className="chiikawa-header">{editingTrip ? t("editTrip") : t("newTrip")}</h2>
             <form onSubmit={handleAddTrip}>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>{t("title")}</label>
@@ -428,7 +428,7 @@ const Home = () => {
                   {t("cancel")}
                 </button>
                 <button type="submit" className="btn-primary" style={{ padding: "10px 20px", borderRadius: "20px" }}>
-                  {editingTrip ? t("save") || "保存" : t("create")}
+                  {editingTrip ? t("save") : t("create")}
                 </button>
               </div>
             </form>

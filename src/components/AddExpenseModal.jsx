@@ -87,7 +87,7 @@ const AddExpenseModal = ({ onClose, onAdd, payers = [], onManagePayers, initialD
         style={{ width: "90%", maxWidth: "400px", maxHeight: "90vh", overflowY: "auto" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2>{initialData ? t("editExpense") || "Edit Expense" : t("addExpense")}</h2>
+          <h2>{initialData ? t("editExpense") : t("addExpense")}</h2>
           <button onClick={onClose} style={{ background: "none" }}>
             <X />
           </button>

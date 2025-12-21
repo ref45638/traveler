@@ -36,7 +36,7 @@ const AcceptInvite = () => {
                 navigate(`/trip/${result.trip.id}`);
             }, 2000);
         } else {
-            setError(result.error || "接受邀請失敗");
+            setError(result.error || t("failedToAccept"));
         }
 
         setLoading(false);
@@ -57,7 +57,7 @@ const AcceptInvite = () => {
                     padding: "20px",
                 }}
             >
-                <p>請先登入...</p>
+                <p>{t("pleaseLogin")}</p>
             </div>
         );
     }
@@ -87,9 +87,9 @@ const AcceptInvite = () => {
                 >
                     <CheckCircle size={64} color="#4CAF50" style={{ margin: "0 auto 20px" }} />
                     <h2 className="chiikawa-header" style={{ marginBottom: "10px" }}>
-                        成功加入旅程！
+                        {t("successJoin")}
                     </h2>
-                    <p style={{ color: "#666" }}>正在前往 {tripInfo.title}...</p>
+                    <p style={{ color: "#666" }}>{t("redirecting").replace("{title}", tripInfo.title)}</p>
                 </motion.div>
             </div>
         );
@@ -119,7 +119,7 @@ const AcceptInvite = () => {
                 <div style={{ textAlign: "center", marginBottom: "25px" }}>
                     <img src={getAssetUrl("/images/home.png")} alt="Traveler" style={{ height: "60px", marginBottom: "15px" }} />
                     <h2 className="chiikawa-header">{t("acceptInvite")}</h2>
-                    <p style={{ color: "#666", fontSize: "0.9rem" }}>您已被邀請加入一個旅程</p>
+                    <p style={{ color: "#666", fontSize: "0.9rem" }}>{t("invitedToJoin")}</p>
                 </div>
 
                 {error ? (
@@ -148,7 +148,7 @@ const AcceptInvite = () => {
                                 borderRadius: "20px",
                             }}
                         >
-                            返回首頁
+                            {t("backHome")}
                         </button>
                     </div>
                 ) : (
@@ -161,7 +161,7 @@ const AcceptInvite = () => {
                                 marginBottom: "25px",
                             }}
                         >
-                            <div style={{ fontSize: "0.85rem", color: "#999", marginBottom: "8px" }}>邀請碼</div>
+                            <div style={{ fontSize: "0.85rem", color: "#999", marginBottom: "8px" }}>{t("inviteCode")}</div>
                             <div
                                 style={{
                                     fontSize: "0.9rem",
@@ -177,7 +177,7 @@ const AcceptInvite = () => {
                             </div>
                         </div>
 
-                        <p style={{ marginBottom: "20px", textAlign: "center", color: "#666" }}>點擊「{t("acceptInvite")}」即可查看和編輯此旅程</p>
+                        <p style={{ marginBottom: "20px", textAlign: "center", color: "#666" }}>{t("acceptInviteDesc").replace("{acceptInvite}", t("acceptInvite"))}</p>
 
                         <div style={{ display: "flex", gap: "10px" }}>
                             <button
@@ -204,7 +204,7 @@ const AcceptInvite = () => {
                                     borderRadius: "20px",
                                 }}
                             >
-                                {loading ? "處理中..." : t("acceptInvite")}
+                                {loading ? t("processing") : t("acceptInvite")}
                             </button>
                         </div>
                     </>

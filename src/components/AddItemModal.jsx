@@ -62,7 +62,7 @@ const AddItemModal = ({ onClose, onAdd, initialData }) => {
         style={{ width: "90%", maxWidth: "400px", maxHeight: "90vh", overflowY: "auto" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2>{initialData ? t("editActivity") || "Edit Activity" : t("addActivity")}</h2>
+          <h2>{initialData ? t("editActivity") : t("addActivity")}</h2>
           <button onClick={onClose} style={{ background: "none" }}>
             <X />
           </button>
@@ -124,7 +124,7 @@ const AddItemModal = ({ onClose, onAdd, initialData }) => {
           </div>
 
           <button type="submit" className="btn-primary" style={{ width: "100%", borderRadius: "20px" }}>
-            {initialData ? t("saveChanges") || "Save Changes" : t("addToItinerary")}
+            {initialData ? t("saveChanges") : t("addToItinerary")}
           </button>
         </form>
       </motion.div>
