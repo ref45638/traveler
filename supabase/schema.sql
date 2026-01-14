@@ -106,6 +106,14 @@ CREATE TABLE trip_checklists (
   trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
   text TEXT NOT NULL,
   completed BOOLEAN DEFAULT false,
+);
+
+-- NOTES
+CREATE TABLE notes (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -123,6 +131,7 @@ ALTER TABLE payers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_checklists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- 3. HELPER FUNCTION FOR SHARING
@@ -292,6 +301,18 @@ CREATE POLICY "Users can update checklists of accessible trips" ON trip_checklis
   FOR UPDATE USING (user_has_trip_access(trip_id));
 
 CREATE POLICY "Users can delete checklists of accessible trips" ON trip_checklists 
+
+-- NOTES
+CREATE POLICY "Users can view notes of accessible trips" ON notes 
+  FOR SELECT USING (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can insert notes to accessible trips" ON notes 
+  FOR INSERT WITH CHECK (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can update notes of accessible trips" ON notes 
+  FOR UPDATE USING (user_has_trip_access(trip_id));
+
+CREATE POLICY "Users can delete notes of accessible trips" ON notes 
   FOR DELETE USING (user_has_trip_access(trip_id));
 
 -- ============================================

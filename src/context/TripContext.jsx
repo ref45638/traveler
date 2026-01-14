@@ -61,7 +61,8 @@ export const TripProvider = ({ children }) => {
           ),
           expenses (*),
           payers (*),
-          checklist:trip_checklists (*)
+          checklist:trip_checklists (*),
+          notes (*)
         `
         )
         .order("created_at", { ascending: false });
@@ -77,6 +78,7 @@ export const TripProvider = ({ children }) => {
         isOwner: trip.user_id === userId,
         expenses: trip.expenses ? trip.expenses.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
         checklist: trip.checklist ? trip.checklist.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
+        notes: trip.notes ? trip.notes.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)) : [],
         shares: trip.shares || [],
         days: trip.days
           .sort((a, b) => a.day_index - b.day_index)
@@ -194,10 +196,7 @@ export const TripProvider = ({ children }) => {
         });
 
         // Delete all existing days (cascade will handle items)
-        const { error: deleteError } = await supabase
-          .from("trip_days")
-          .delete()
-          .eq("trip_id", tripId);
+        const { error: deleteError } = await supabase.from("trip_days").delete().eq("trip_id", tripId);
 
         if (deleteError) throw deleteError;
 
@@ -208,10 +207,7 @@ export const TripProvider = ({ children }) => {
           date: format(date, "yyyy-MM-dd"),
         }));
 
-        const { data: createdDays, error: daysError } = await supabase
-          .from("trip_days")
-          .insert(newDaysData)
-          .select();
+        const { data: createdDays, error: daysError } = await supabase.from("trip_days").insert(newDaysData).select();
 
         if (daysError) throw daysError;
 
@@ -232,9 +228,7 @@ export const TripProvider = ({ children }) => {
               order_index: idx,
             }));
 
-            const { error: itemsError } = await supabase
-              .from("trip_items")
-              .insert(itemsToInsert);
+            const { error: itemsError } = await supabase.from("trip_items").insert(itemsToInsert);
 
             if (itemsError) console.error("Error re-adding items:", itemsError);
           }
@@ -685,42 +679,37 @@ export const TripProvider = ({ children }) => {
       const trip = trips.find((t) => t.id === tripId);
       const currentList = trip?.checklist || [];
       const maxOrder = currentList.reduce((max, item) => Math.max(max, item.order_index || 0), 0);
-      
-      const { error } = await supabase
-        .from("trip_checklists")
-        .insert([
-          {
-            trip_id: tripId,
-            text,
-            completed: false,
-            order_index: maxOrder + 1
-          }
-        ]);
+
+      const { error } = await supabase.from("trip_checklists").insert([
+        {
+          trip_id: tripId,
+          text,
+          completed: false,
+          order_index: maxOrder + 1,
+        },
+      ]);
 
       if (error) throw error;
       fetchTrips(user.id);
     } catch (error) {
-       console.error("Error adding checklist item:", error);
+      console.error("Error adding checklist item:", error);
     }
   };
 
   const toggleChecklistItem = async (tripId, itemId, completed) => {
     // Optimistic Update
-    setTrips(prev => prev.map(trip => {
-      if (trip.id !== tripId) return trip;
-      return {
-        ...trip,
-        checklist: trip.checklist.map(item => 
-          item.id === itemId ? { ...item, completed } : item
-        )
-      };
-    }));
+    setTrips((prev) =>
+      prev.map((trip) => {
+        if (trip.id !== tripId) return trip;
+        return {
+          ...trip,
+          checklist: trip.checklist.map((item) => (item.id === itemId ? { ...item, completed } : item)),
+        };
+      })
+    );
 
     try {
-      const { error } = await supabase
-        .from("trip_checklists")
-        .update({ completed })
-        .eq("id", itemId);
+      const { error } = await supabase.from("trip_checklists").update({ completed }).eq("id", itemId);
 
       if (error) throw error;
       // fetchTrips(user.id); // Skip if optimistic
@@ -731,20 +720,19 @@ export const TripProvider = ({ children }) => {
   };
 
   const deleteChecklistItem = async (tripId, itemId) => {
-     // Optimistic
-     setTrips(prev => prev.map(trip => {
-      if (trip.id !== tripId) return trip;
-      return {
-        ...trip,
-        checklist: trip.checklist.filter(item => item.id !== itemId)
-      };
-    }));
+    // Optimistic
+    setTrips((prev) =>
+      prev.map((trip) => {
+        if (trip.id !== tripId) return trip;
+        return {
+          ...trip,
+          checklist: trip.checklist.filter((item) => item.id !== itemId),
+        };
+      })
+    );
 
     try {
-      const { error } = await supabase
-        .from("trip_checklists")
-        .delete()
-        .eq("id", itemId);
+      const { error } = await supabase.from("trip_checklists").delete().eq("id", itemId);
 
       if (error) throw error;
     } catch (error) {
@@ -801,6 +789,89 @@ export const TripProvider = ({ children }) => {
     }
   };
 
+  // ========== NOTES FUNCTIONS ==========
+
+  const addNote = async (tripId, note) => {
+    try {
+      // Get current max order_index
+      const trip = trips.find((t) => t.id === tripId);
+      const currentNotes = trip?.notes || [];
+      const maxOrder = currentNotes.reduce((max, item) => Math.max(max, item.order_index || 0), 0);
+
+      const { error } = await supabase.from("notes").insert([
+        {
+          trip_id: tripId,
+          title: note.title,
+          content: note.content,
+          order_index: maxOrder + 1,
+        },
+      ]);
+
+      if (error) throw error;
+      fetchTrips(user.id);
+    } catch (error) {
+      console.error("Error adding note:", error);
+    }
+  };
+
+  const updateNote = async (tripId, noteId, updatedNote) => {
+    try {
+      const { error } = await supabase
+        .from("notes")
+        .update({
+          title: updatedNote.title,
+          content: updatedNote.content,
+        })
+        .eq("id", noteId);
+
+      if (error) throw error;
+      fetchTrips(user.id);
+    } catch (error) {
+      console.error("Error updating note:", error);
+    }
+  };
+
+  const deleteNote = async (tripId, noteId) => {
+    try {
+      const { error } = await supabase.from("notes").delete().eq("id", noteId);
+      if (error) throw error;
+      fetchTrips(user.id);
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    }
+  };
+
+  const reorderNotes = async (tripId, reorderedNotes) => {
+    // Optimistic Update
+    setTrips((prevTrips) => {
+      return prevTrips.map((trip) => {
+        if (trip.id !== tripId) return trip;
+        const newNotes = reorderedNotes.map((item, index) => ({
+          ...item,
+          order_index: index,
+        }));
+        return { ...trip, notes: newNotes };
+      });
+    });
+
+    try {
+      const updates = reorderedNotes.map((item, index) => ({
+        id: item.id,
+        trip_id: tripId,
+        title: item.title,
+        content: item.content,
+        order_index: index,
+      }));
+
+      const { error } = await supabase.from("notes").upsert(updates);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error reordering notes:", error);
+      fetchTrips(user.id); // Revert on error
+    }
+  };
+
   return (
     <TripContext.Provider
       value={{
@@ -821,6 +892,11 @@ export const TripProvider = ({ children }) => {
         addPayer,
         deletePayer,
         renamePayer,
+        // Notes functions
+        addNote,
+        updateNote,
+        deleteNote,
+        reorderNotes,
         // Sharing functions
         shareTrip,
         createInviteLink,

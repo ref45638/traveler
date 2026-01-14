@@ -12,12 +12,31 @@ import AddExpenseModal from "../components/AddExpenseModal";
 import PayerManagerModal from "../components/PayerManagerModal";
 import ShareModal from "../components/ShareModal";
 import Checklist from "../components/Checklist";
+import NoteList from "../components/NoteList";
+import AddNoteModal from "../components/AddNoteModal";
 
 const TripDetails = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { trips, addTripItem, updateTripItem, addExpense, updateExpense, reorderExpenses, deleteExpense, addPayer, deletePayer, renamePayer, addChecklistItem, toggleChecklistItem, deleteChecklistItem } =
-    useTrips();
+  const {
+    trips,
+    addTripItem,
+    updateTripItem,
+    addExpense,
+    updateExpense,
+    reorderExpenses,
+    deleteExpense,
+    addPayer,
+    deletePayer,
+    renamePayer,
+    addChecklistItem,
+    toggleChecklistItem,
+    deleteChecklistItem,
+    addNote,
+    updateNote,
+    deleteNote,
+    reorderNotes,
+  } = useTrips();
   const { t } = useLanguage();
   const trip = trips.find((t) => t.id === tripId);
 
@@ -27,8 +46,10 @@ const TripDetails = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showPayerModal, setShowPayerModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [editingNote, setEditingNote] = useState(null);
   const dayTabsRef = useRef(null);
   const dayTabsInnerRef = useRef(null);
   const dayButtonRefs = useRef([]);
@@ -193,8 +214,16 @@ const TripDetails = () => {
         );
       case "notes":
         return (
-          <div className="flex-center" style={{ height: "100%" }}>
-            {t("notes")} - {t("comingSoon")}
+          <div style={{ height: "100%", overflowY: "auto", overflowX: "hidden", paddingBottom: "80px" }}>
+            <NoteList
+              notes={trip.notes || []}
+              onDelete={(id) => deleteNote(trip.id, id)}
+              onEdit={(note) => {
+                setEditingNote(note);
+                setShowNoteModal(true);
+              }}
+              onReorder={(newNotes) => reorderNotes(trip.id, newNotes)}
+            />
           </div>
         );
       default:
@@ -324,6 +353,9 @@ const TripDetails = () => {
               if (activeTab === "expenses") {
                 setEditingExpense(null);
                 setShowExpenseModal(true);
+              } else if (activeTab === "notes") {
+                setEditingNote(null);
+                setShowNoteModal(true);
               } else {
                 setEditingItem(null);
                 setShowAddModal(true);
@@ -374,6 +406,24 @@ const TripDetails = () => {
           onAdd={(name) => addPayer(trip.id, name)}
           onDelete={(name) => deletePayer(trip.id, name)}
           onRename={(oldName, newName) => renamePayer(trip.id, oldName, newName)}
+        />
+      )}
+
+      {showNoteModal && (
+        <AddNoteModal
+          onClose={() => {
+            setShowNoteModal(false);
+            setEditingNote(null);
+          }}
+          onAdd={(note) => {
+            if (editingNote) {
+              updateNote(trip.id, editingNote.id, note);
+            } else {
+              addNote(trip.id, note);
+            }
+            setEditingNote(null);
+          }}
+          initialData={editingNote}
         />
       )}
 
