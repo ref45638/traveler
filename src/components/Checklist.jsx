@@ -1,11 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { CheckSquare, Square, Trash2, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../context/LanguageContext";
 
-const Checklist = ({ items = [], onAdd, onToggle, onDelete }) => {
+const Checklist = forwardRef(({ items = [], onAdd, onToggle, onDelete }, ref) => {
   const { t } = useLanguage();
   const [newItemText, setNewItemText] = useState("");
+  const inputRef = useRef(null);
+
+  // 暴露 focusInput 方法給父組件
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      inputRef.current?.focus();
+    },
+  }));
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -22,8 +30,9 @@ const Checklist = ({ items = [], onAdd, onToggle, onDelete }) => {
   return (
     <div style={{ padding: "20px", paddingBottom: "100px", maxWidth: "600px", margin: "0 auto" }}>
       {/* Input Area */}
-      <form onSubmit={handleAdd} style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
+      <form onSubmit={handleAdd} style={{ width: "100%", marginBottom: "20px", display: "flex", gap: "10px" }}>
         <input
+          ref={inputRef}
           type="text"
           value={newItemText}
           onChange={(e) => setNewItemText(e.target.value)}
@@ -90,15 +99,15 @@ const Checklist = ({ items = [], onAdd, onToggle, onDelete }) => {
               >
                 {item.completed ? <CheckSquare size={24} /> : <Square size={24} />}
               </button>
-              
+
               <span
-                 onClick={() => onToggle(item.id, !item.completed)}
-                 style={{
-                    flex: 1,
-                    textDecoration: item.completed ? "line-through" : "none",
-                    cursor: "pointer",
-                    fontSize: "1rem",
-                 }}
+                onClick={() => onToggle(item.id, !item.completed)}
+                style={{
+                  flex: 1,
+                  textDecoration: item.completed ? "line-through" : "none",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                }}
               >
                 {item.text}
               </span>
@@ -119,15 +128,11 @@ const Checklist = ({ items = [], onAdd, onToggle, onDelete }) => {
             </motion.div>
           ))}
         </AnimatePresence>
-        
-        {items.length === 0 && (
-          <div style={{ textAlign: "center", color: "var(--color-text-light)", marginTop: "40px" }}>
-             {t("noItems")}
-          </div>
-        )}
+
+        {items.length === 0 && <div style={{ textAlign: "center", color: "var(--color-text-light)", marginTop: "40px" }}>{t("noItems")}</div>}
       </div>
     </div>
   );
-};
+});
 
 export default Checklist;

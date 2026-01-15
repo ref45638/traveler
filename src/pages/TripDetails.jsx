@@ -54,6 +54,7 @@ const TripDetails = () => {
   const dayTabsInnerRef = useRef(null);
   const dayButtonRefs = useRef([]);
   const carouselContainerRef = useRef(null);
+  const checklistRef = useRef(null);
   const [slideWidth, setSlideWidth] = useState(375);
   const [dayTabsConstraints, setDayTabsConstraints] = useState({ left: 0, right: 0 });
   const carouselControls = useAnimationControls();
@@ -206,6 +207,7 @@ const TripDetails = () => {
       case "checklist":
         return (
           <Checklist
+            ref={checklistRef}
             items={trip.checklist || []}
             onAdd={(text) => addChecklistItem(trip.id, text)}
             onToggle={(id, completed) => toggleChecklistItem(trip.id, id, completed)}
@@ -356,6 +358,9 @@ const TripDetails = () => {
               } else if (activeTab === "notes") {
                 setEditingNote(null);
                 setShowNoteModal(true);
+              } else if (activeTab === "checklist") {
+                // 聚焦到清單輸入框
+                checklistRef.current?.focusInput();
               } else {
                 setEditingItem(null);
                 setShowAddModal(true);
